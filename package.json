@@ -4,16 +4,25 @@
   "description": "Enterprise Workshop Management, 60\" Waiting Lounge TV with YouTube Autoplay, Voice Announcements, and AI Job Cards for Al Shaheen Auto Hub",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "build": "echo ok"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "legacy": "node server.js"
   },
   "engines": {
     "node": ">=18.x"
   },
   "dependencies": {
+    "@google/genai": "^3.3.0",
+    "@supabase/supabase-js": "^2.119.0",
+    "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "lucide-react": "^1.73.0",
+    "next": "^14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.7.0",
     "ws": "^8.23.0"
   },
   "keywords": [
@@ -25,5 +34,14 @@
     "gemini-ai"
   ],
   "author": "Al Shaheen Auto Hub",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.6.3"
+  }
 }

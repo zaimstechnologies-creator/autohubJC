@@ -1,341 +1,812 @@
 [
   {
+    "id": "ASH-426297",
+    "job_card_number": "ASH-426297",
+    "customer_name": "Ali Haider",
+    "customer_phone": "03364331888",
+    "customer_address": "Askari 11",
+    "plate_number": "BNW 17 1995",
+    "make_model": "Toyota XLI 2022",
+    "variant": "",
+    "mileage_km": 45000,
+    "body_color": "Black",
+    "service_advisor": "Bilal",
+    "bay_category": "WORKSHOP",
+    "bay_number": 1,
+    "status": "CLOSED_PAID",
+    "fuel_level_percent": 20,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
+    },
+    "inspection_markers": [
+      {
+        "id": "m_1794762511421_lxf0",
+        "x": 59.9,
+        "y": 22.2,
+        "type": "DENT",
+        "createdAt": "2026-11-15T17:08:31.421Z"
+      },
+      {
+        "id": "m_1794762515388_aynq",
+        "x": 32.5,
+        "y": 64.9,
+        "type": "SCRATCH",
+        "createdAt": "2026-11-15T17:08:35.388Z"
+      },
+      {
+        "id": "m_1794762518082_jm6e",
+        "x": 30.1,
+        "y": 42.2,
+        "type": "CHIP",
+        "createdAt": "2026-11-15T17:08:38.082Z"
+      },
+      {
+        "id": "m_1794762520068_gj70",
+        "x": 41.5,
+        "y": 19.6,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:40.069Z"
+      },
+      {
+        "id": "m_1794762521052_wdv8",
+        "x": 46.3,
+        "y": 20.7,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:41.052Z"
+      },
+      {
+        "id": "m_1794762522146_x2hj",
+        "x": 45.5,
+        "y": 60,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:42.146Z"
+      },
+      {
+        "id": "m_1794762522469_zizw",
+        "x": 40.9,
+        "y": 57.7,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:42.469Z"
+      },
+      {
+        "id": "m_1794762523826_308k",
+        "x": 62.2,
+        "y": 23.7,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:43.826Z"
+      },
+      {
+        "id": "m_1794762524546_uc5w",
+        "x": 61.9,
+        "y": 58.9,
+        "type": "RUST",
+        "createdAt": "2026-11-15T17:08:44.546Z"
+      }
+    ],
+    "customer_concern": "front bumper paint krna hai, fender py dry dent hai woh thk krwana hai, suspension sy awazain a rhi hain, gari ki tuning b hony wali hai, oil change b hony wala hai, gari left side ki trf b khinchti hai",
+    "ai_diagnosis_result": {
+      "roman_urdu_explanation": "1. Front Bumper Paint aur Fender Dry Denting: Aap ki gari ke aglay bumper par scratches hain aur fender par dry dent hai. Bumper ko proper sanding, primer aur 2K paint match kar ke original showroom shine di jaye gi, jabke fender ka dent bina paint kharab kiye dry denting tool se nikaala jaye ga. 2. Suspension Awazain aur Left Side Pulling: Front suspension ke lower arm bushes aur tie rod ends ghiss chuke hain jis ki wajah se gadday par awazain aati hain aur gari left side par pull karti hai. Agar isay theek na karwaya jaye tu mehngay tyres ek taraf se ghalat ghis jayen ge (uneven tyre wear) aur steering control kamzor ho jaye ga. Al Shaheen Auto Hub par suspension overhauling ke baad computerized 3D wheel alignment aur balancing ki jaye gi. 3. Engine Tuning aur Engine Oil Change: 45,000 KM par gari ki routine maintenance required hai. Throttle body, spark plugs aur air filter ki safai/replacement ke sath Toyota OEM engine oil aur oil filter change kiya jaye ga taake fuel average aur pick behtar ho sakay.",
+      "plain_english_explanation": "The vehicle requires cosmetic body repairs, routine engine servicing, and suspension overhauling. The front bumper has paint scuffs requiring a complete professional repainting, while the front fender features a minor dent suitable for Paintless Dent Repair (PDR). The noise from the undercarriage and vehicle pulling towards the left side stems from worn front lower arm bushings, tie rod ends, and wheel misalignment. Post-suspension repair, a 3D computerized alignment and wheel balancing will resolve the tracking issue. Additionally, a full engine tune-up (throttle body cleaning, spark plug service, air filter replacement) and an oil service at 45,000 KM will restore optimal engine performance and efficiency.",
+      "mechanical_root_cause": "1. Suspension Noise & Left Pulling: Deteriorated front lower control arm rubber bushings and worn tie rod end joints causing excessive play in the front suspension geometry, resulting in dynamic camber/caster deviation and vehicle pulling to the left under load. 2. Engine Hesitation / Service Due: Carbon buildup on the electronic throttle body butterfly valve and degraded spark plug electrode gap at 45,000 KM causing sluggish acceleration. 3. Cosmetic Body Damage: Surface paint abrasion on front bumper fascia and localized sheet metal deformation on fender without paint fracture.",
+      "recommended_departments": [
+        "Mechanical",
+        "Suspension",
+        "Alignment",
+        "Balancing",
+        "Denting",
+        "Painting",
+        "General Service"
+      ],
+      "work_to_be_done": "1. Disassemble front bumper fascia, perform surface preparation, primer application, computer color matching, and 2K clear coat paint booth baking. 2. Perform Paintless Dent Repair (PDR / Dry Denting) on the damaged front fender using specialized PDR rods and suction tools. 3. Inspect front suspension linkage; replace worn lower control arm bushes and outer tie rod ends. 4. Drain engine oil, replace Toyota genuine oil filter, and refill with 3.7L 5W-30 synthetic engine oil. 5. Perform complete engine tuning: remove and clean electronic throttle body with cleaner spray, inspect/clean/replace spark plugs, clean intake air filter, and reset ECU self-learned parameters. 6. Execute 4-wheel computerized 3D alignment and dynamic wheel balancing to eliminate left-side drift.",
+      "suggested_parts": [
+        {
+          "description": "Toyota Genuine Engine Oil 5W-30 (4 Liters)",
+          "qty": 1,
+          "estimated_rate_pkr": 8500,
+          "classification": "OEM Parts",
+          "sku": "TOY-5W30-4L"
+        },
+        {
+          "description": "Toyota Genuine Oil Filter",
+          "qty": 1,
+          "estimated_rate_pkr": 1850,
+          "classification": "OEM Parts",
+          "sku": "TOY-90915-YZZD2"
+        },
+        {
+          "description": "Engine Air Filter (Toyota Corolla 1.3/1.6)",
+          "qty": 1,
+          "estimated_rate_pkr": 2400,
+          "classification": "Aftermarket",
+          "sku": "AF-TOY-17801"
+        },
+        {
+          "description": "Denso Iridium Spark Plugs Set",
+          "qty": 1,
+          "estimated_rate_pkr": 9200,
+          "classification": "OEM Parts",
+          "sku": "DEN-IR-SET4"
+        },
+        {
+          "description": "Front Lower Control Arm Bush Kit (Left & Right)",
+          "qty": 1,
+          "estimated_rate_pkr": 6800,
+          "classification": "Aftermarket",
+          "sku": "SUS-BUS-COR22"
+        },
+        {
+          "description": "Front Outer Tie Rod Ends (Pair)",
+          "qty": 1,
+          "estimated_rate_pkr": 5200,
+          "classification": "Aftermarket",
+          "sku": "TRE-TOY-COR22"
+        },
+        {
+          "description": "Automotive 2K Paint Material & Clear Coat Supplies",
+          "qty": 1,
+          "estimated_rate_pkr": 7500,
+          "classification": "Consumables",
+          "sku": "PNT-SUP-BUMP"
+        }
+      ]
+    },
+    "work_to_be_done": "1. Disassemble front bumper fascia, perform surface preparation, primer application, computer color matching, and 2K clear coat paint booth baking. 2. Perform Paintless Dent Repair (PDR / Dry Denting) on the damaged front fender using specialized PDR rods and suction tools. 3. Inspect front suspension linkage; replace worn lower control arm bushes and outer tie rod ends. 4. Drain engine oil, replace Toyota genuine oil filter, and refill with 3.7L 5W-30 synthetic engine oil. 5. Perform complete engine tuning: remove and clean electronic throttle body with cleaner spray, inspect/clean/replace spark plugs, clean intake air filter, and reset ECU self-learned parameters. 6. Execute 4-wheel computerized 3D alignment and dynamic wheel balancing to eliminate left-side drift.",
+    "departments": [
+      "Mechanical",
+      "Tyres Works",
+      "Balancing",
+      "Inspection",
+      "General Service",
+      "Suspension",
+      "Alignment",
+      "Denting",
+      "Painting"
+    ],
+    "itemized_parts": [
+      {
+        "id": "ai_1794762374503_0",
+        "sku": "TOY-5W30-4L",
+        "description": "Toyota Genuine Engine Oil 5W-30 (4 Liters)",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794762374503_1",
+        "sku": "TOY-90915-YZZD2",
+        "description": "Toyota Genuine Oil Filter",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794762374503_2",
+        "sku": "AF-TOY-17801",
+        "description": "Engine Air Filter (Toyota Corolla 1.3/1.6)",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "Aftermarket"
+      },
+      {
+        "id": "ai_1794762374503_3",
+        "sku": "DEN-IR-SET4",
+        "description": "Denso Iridium Spark Plugs Set",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794762374503_4",
+        "sku": "SUS-BUS-COR22",
+        "description": "Front Lower Control Arm Bush Kit (Left & Right)",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "Aftermarket"
+      },
+      {
+        "id": "ai_1794762374503_5",
+        "sku": "TRE-TOY-COR22",
+        "description": "Front Outer Tie Rod Ends (Pair)",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "Aftermarket"
+      },
+      {
+        "id": "ai_1794762374503_6",
+        "sku": "PNT-SUP-BUMP",
+        "description": "Automotive 2K Paint Material & Clear Coat Supplies",
+        "qty": 1,
+        "rate": 0,
+        "amount": 0,
+        "classification": "Consumables"
+      }
+    ],
+    "labor_charges": 0,
+    "alignment_charges": 0,
+    "discount_amount": 0,
+    "advance_deposit": 0,
+    "parts_total": 0,
+    "net_payable": 0,
+    "balance_remaining": 0,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Mr Fiaz Ray",
+    "delivered_by": "M. Ahmed",
+    "created_at": "2026-11-15T16:50:57.969Z",
+    "updated_at": "2026-11-15T17:10:23.177Z",
+    "closed_at": "2026-11-15T17:10:23.177Z"
+  },
+  {
     "id": "ASH-969448",
-    "createdAt": "2026-11-15T12:27:04.207Z",
-    "deliveryDue": "2026-11-15T17:27:04.207Z",
-    "status": "In Progress",
-    "currentBay": "Bay 1",
-    "customer": {
-      "name": "Haider",
-      "phone": "03364315848",
-      "address": "Lahore"
+    "job_card_number": "ASH-969448",
+    "customer_name": "Haider",
+    "customer_phone": "03364315848",
+    "customer_address": "Lahore",
+    "plate_number": "AQP 007",
+    "make_model": "Mazda Flair 007",
+    "variant": "",
+    "mileage_km": 45000,
+    "body_color": "Red",
+    "service_advisor": "Master Advisor",
+    "bay_category": "WORKSHOP",
+    "bay_number": 1,
+    "status": "IN_PROGRESS",
+    "fuel_level_percent": 25,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
     },
-    "vehicle": {
-      "plateNo": "AQP 007",
-      "makeModel": "Mazda Flair 007",
-      "mileage": "45000",
-      "color": "Red",
-      "fuelLevel": 25
-    },
-    "inventory": {
-      "spareWheel": true,
-      "toolKit": true,
-      "floorMats": true,
-      "valuablesOut": true
-    },
+    "inspection_markers": [],
+    "customer_concern": "gari k engine sy tik tik ki awazain a rhi hain",
+    "ai_diagnosis_result": null,
+    "work_to_be_done": "1. Inspect front shock absorbers, strut mount bearings, and drive axles for fluid leakage and abnormal play.\n2. Check stabilizer sway bar links and rubber D-bushings; road-test over speed bumps to verify contact noise elimination.",
     "departments": [
       "Mechanical",
       "Car Wash",
       "General Service"
     ],
-    "concern": "gari k engine sy tik tik ki awazain a rhi hain",
-    "workToBeDone": "1. Inspect front shock absorbers, strut mount bearings, and drive axles for fluid leakage and abnormal play.\n2. Check stabilizer sway bar links and rubber D-bushings; road-test over speed bumps to verify contact noise elimination.",
-    "parts": [
+    "itemized_parts": [
       {
-        "desc": "Front Outer CV Joint & Axle Boot Assembly",
+        "id": "P-1",
+        "sku": "",
+        "description": "Front Outer CV Joint & Axle Boot Assembly",
         "qty": 1,
         "rate": 0,
-        "amount": 0
+        "amount": 0,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "Front Stabilizer Sway Bar Drop Links (Pair)",
+        "id": "P-2",
+        "sku": "",
+        "description": "Front Stabilizer Sway Bar Drop Links (Pair)",
         "qty": 1,
         "rate": 0,
-        "amount": 0
+        "amount": 0,
+        "classification": "OEM Parts"
       }
     ],
-    "labour": 0,
-    "otherCharges": 0,
-    "discount": 0,
-    "advance": 0,
-    "subTotal": 0,
-    "netPayable": 0,
-    "balance": 0,
-    "serviceAdvisor": "Service Incharge",
-    "damageMarkers": [
-      {
-        "type": "D",
-        "x": 0.1713043212890625,
-        "y": 0.4139129638671875
-      },
-      {
-        "type": "D",
-        "x": 0.6604347560716712,
-        "y": 0.2704347029976223
-      },
-      {
-        "type": "D",
-        "x": 0.6539130169412364,
-        "y": 0.5486955725628396
-      },
-      {
-        "type": "D",
-        "x": 0.2539130169412364,
-        "y": 0.2704347029976223
-      },
-      {
-        "type": "D",
-        "x": 0.26695649520210596,
-        "y": 0.5486955725628396
-      }
-    ],
-    "paymentCleared": false,
-    "closedAt": "2026-11-15T12:35:08.841Z"
+    "labor_charges": 0,
+    "alignment_charges": 0,
+    "discount_amount": 0,
+    "advance_deposit": 0,
+    "parts_total": 0,
+    "net_payable": 0,
+    "balance_remaining": 0,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Staff Advisor",
+    "delivered_by": "",
+    "created_at": "2026-11-15T12:27:04.207Z",
+    "updated_at": "2026-11-15T16:44:05.507Z",
+    "closed_at": "2026-11-15T12:35:08.841Z"
   },
   {
     "id": "ASH-414288",
-    "createdAt": "2026-11-15T11:50:53.606Z",
-    "deliveryDue": "2026-11-15T16:50:53.606Z",
-    "status": "In Progress",
-    "currentBay": "Bay 4",
-    "customer": {
-      "name": "Haider",
-      "phone": "03364331888",
-      "address": "Askari 11"
+    "job_card_number": "ASH-414288",
+    "customer_name": "Haider",
+    "customer_phone": "03364331888",
+    "customer_address": "Askari 11",
+    "plate_number": "XAS 17 2656",
+    "make_model": "Nissan Dayz 2023",
+    "variant": "",
+    "mileage_km": 45000,
+    "body_color": "Black",
+    "service_advisor": "Master Advisor",
+    "bay_category": "CAR_WASH",
+    "bay_number": 2,
+    "status": "CLOSED_PAID",
+    "fuel_level_percent": 35,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
     },
-    "vehicle": {
-      "plateNo": "XAS 17 2656",
-      "makeModel": "Nissan Dayz 2023",
-      "mileage": "45000",
-      "color": "Black",
-      "fuelLevel": 35
-    },
-    "inventory": {
-      "spareWheel": true,
-      "toolKit": true,
-      "floorMats": true,
-      "valuablesOut": true
-    },
+    "inspection_markers": [],
+    "customer_concern": "Break sahi nhi lag rhi, na agli na pichli",
+    "ai_diagnosis_result": null,
+    "work_to_be_done": "1. Measure front brake pad and rear brake shoe friction lining thickness against safety tolerances.\n2. Inspect front brake disc rotors for grooves and lateral runout; precision skim on lathe if required; bleed brake fluid with fresh DOT-4.",
     "departments": [
       "Mechanical",
       "General Service"
     ],
-    "concern": "Break sahi nhi lag rhi, na agli na pichli",
-    "workToBeDone": "1. Measure front brake pad and rear brake shoe friction lining thickness against safety tolerances.\n2. Inspect front brake disc rotors for grooves and lateral runout; precision skim on lathe if required; bleed brake fluid with fresh DOT-4.",
-    "parts": [
+    "itemized_parts": [
       {
-        "desc": "Front Ceramic Brake Pads (OEM)",
+        "id": "P-1",
+        "sku": "",
+        "description": "Front Ceramic Brake Pads (OEM)",
         "qty": 1,
         "rate": 6500,
-        "amount": 6500
+        "amount": 6500,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "Brake Rotor Disc Precision Skimming / Lathe Resurfacing (Pair)",
+        "id": "P-2",
+        "sku": "",
+        "description": "Brake Rotor Disc Precision Skimming / Lathe Resurfacing (Pair)",
         "qty": 1,
         "rate": 2500,
-        "amount": 2500
+        "amount": 2500,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "DOT-4 Hydraulic Brake Fluid (500ml)",
+        "id": "P-3",
+        "sku": "",
+        "description": "DOT-4 Hydraulic Brake Fluid (500ml)",
         "qty": 2,
         "rate": 1200,
-        "amount": 2400
+        "amount": 2400,
+        "classification": "OEM Parts"
       }
     ],
-    "labour": 5500,
-    "otherCharges": 0,
-    "discount": 0,
-    "advance": 0,
-    "subTotal": 16900,
-    "netPayable": 16900,
-    "balance": 16900,
-    "serviceAdvisor": "Service Incharge",
-    "damageMarkers": [
-      {
-        "type": "R",
-        "x": 0.0995651908542799,
-        "y": 0.2139129638671875
-      },
-      {
-        "type": "R",
-        "x": 0.09521736476732337,
-        "y": 0.5921738334324049
-      }
-    ],
-    "paymentCleared": false,
-    "closedAt": "2026-11-15T11:54:25.647Z"
+    "labor_charges": 5500,
+    "alignment_charges": 0,
+    "discount_amount": 0,
+    "advance_deposit": 0,
+    "parts_total": 11400,
+    "net_payable": 16900,
+    "balance_remaining": 16900,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Staff Advisor",
+    "delivered_by": "",
+    "created_at": "2026-11-15T11:50:53.606Z",
+    "updated_at": "2026-11-15T16:38:18.843Z",
+    "closed_at": "2026-11-15T16:38:18.843Z"
   },
   {
     "id": "ASH-829104",
-    "createdAt": "2026-11-15T09:15:00.000Z",
-    "deliveryDue": "2026-11-15T17:30:00.000Z",
-    "status": "In Progress",
-    "currentBay": "Bay 5",
-    "customer": {
-      "name": "Hamza Tariq",
-      "phone": "0321-4455667",
-      "address": "DHA Phase 5, Lahore"
+    "job_card_number": "ASH-829104",
+    "customer_name": "Hamza Tariq",
+    "customer_phone": "0321-4455667",
+    "customer_address": "DHA Phase 5, Lahore",
+    "plate_number": "LEB 9090",
+    "make_model": "Toyota Fortuner (2023)",
+    "variant": "",
+    "mileage_km": 32000,
+    "body_color": "Super White",
+    "service_advisor": "Master Advisor",
+    "bay_category": "CAR_WASH",
+    "bay_number": 1,
+    "status": "CLOSED_PAID",
+    "fuel_level_percent": 85,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
     },
-    "vehicle": {
-      "plateNo": "LEB 9090",
-      "makeModel": "Toyota Fortuner (2023)",
-      "mileage": "32000",
-      "color": "Super White",
-      "fuelLevel": 85
-    },
-    "inventory": {
-      "spareWheel": true,
-      "toolKit": true,
-      "floorMats": true,
-      "valuablesOut": true
-    },
+    "inspection_markers": [],
+    "customer_concern": "Periodic 30,000 KM maintenance, ceramic booster wash, and AC performance check.",
+    "ai_diagnosis_result": null,
+    "work_to_be_done": "1. Replace OEM engine oil (5W-30 Synthetic) and oil filter.\n2. Service cabin AC filter and clean condenser fins.\n3. Conduct 40-point safety check, brake pad thickness measurement, and tire rotation.\n4. Complete premium interior detailing and foam wash.",
     "departments": [
       "Mechanical",
       "Car Wash",
       "Detailing",
       "General Service"
     ],
-    "concern": "Periodic 30,000 KM maintenance, ceramic booster wash, and AC performance check.",
-    "workToBeDone": "1. Replace OEM engine oil (5W-30 Synthetic) and oil filter.\n2. Service cabin AC filter and clean condenser fins.\n3. Conduct 40-point safety check, brake pad thickness measurement, and tire rotation.\n4. Complete premium interior detailing and foam wash.",
-    "parts": [
+    "itemized_parts": [
       {
-        "desc": "Toyota Genuine Synthetic Oil (5W-30) - 7L",
+        "id": "P-1",
+        "sku": "",
+        "description": "Toyota Genuine Synthetic Oil (5W-30) - 7L",
         "qty": 1,
         "rate": 18500,
-        "amount": 18500
+        "amount": 18500,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "Toyota OEM Oil Filter",
+        "id": "P-2",
+        "sku": "",
+        "description": "Toyota OEM Oil Filter",
         "qty": 1,
         "rate": 2800,
-        "amount": 2800
+        "amount": 2800,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "Cabin AC Air Filter",
+        "id": "P-3",
+        "sku": "",
+        "description": "Cabin AC Air Filter",
         "qty": 1,
         "rate": 2200,
-        "amount": 2200
+        "amount": 2200,
+        "classification": "OEM Parts"
       }
     ],
-    "labour": 4500,
-    "otherCharges": 0,
-    "discount": 500,
-    "advance": 10000,
-    "subTotal": 28000,
-    "netPayable": 27500,
-    "balance": 17500,
-    "serviceAdvisor": "Service Incharge",
-    "damageMarkers": [],
-    "paymentCleared": false,
-    "closedAt": "2026-11-15T11:54:28.812Z"
+    "labor_charges": 4500,
+    "alignment_charges": 0,
+    "discount_amount": 500,
+    "advance_deposit": 10000,
+    "parts_total": 23500,
+    "net_payable": 27500,
+    "balance_remaining": 17500,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Staff Advisor",
+    "delivered_by": "",
+    "created_at": "2026-11-15T09:15:00.000Z",
+    "updated_at": "2026-11-15T16:38:17.936Z",
+    "closed_at": "2026-11-15T16:38:17.936Z"
   },
   {
     "id": "ASH-642109",
-    "createdAt": "2026-11-15T10:30:00.000Z",
-    "deliveryDue": "2026-11-15T18:00:00.000Z",
-    "status": "In Progress",
-    "currentBay": "Bay 3",
-    "customer": {
-      "name": "Usman Malik",
-      "phone": "0300-8877665",
-      "address": "Gulberg III, Lahore"
+    "job_card_number": "ASH-642109",
+    "customer_name": "Usman Malik",
+    "customer_phone": "0300-8877665",
+    "customer_address": "Gulberg III, Lahore",
+    "plate_number": "ICT 772",
+    "make_model": "Honda Civic RS (2022)",
+    "variant": "",
+    "mileage_km": 41000,
+    "body_color": "Crystal Black",
+    "service_advisor": "Master Advisor",
+    "bay_category": "WORKSHOP",
+    "bay_number": 3,
+    "status": "CLOSED_PAID",
+    "fuel_level_percent": 30,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
     },
-    "vehicle": {
-      "plateNo": "ICT 772",
-      "makeModel": "Honda Civic RS (2022)",
-      "mileage": "41000",
-      "color": "Crystal Black",
-      "fuelLevel": 60
-    },
-    "inventory": {
-      "spareWheel": true,
-      "toolKit": true,
-      "floorMats": true,
-      "valuablesOut": true
-    },
-    "departments": [
-      "Mechanical",
-      "Electrical"
-    ],
-    "concern": "Gari slow speed par jerk leti hai aur steering light on hai.",
-    "workToBeDone": "1. Connect OBD-II diagnostic scanner to scan ECM and EPS control modules.\n2. Inspect throttle body carbon buildup and clean with sensor-safe cleaner.\n3. Calibrate steering torque sensor and verify wheel speed sensor readings.",
-    "parts": [
+    "inspection_markers": [
       {
-        "desc": "Throttle Body Cleaner Chemical",
-        "qty": 1,
-        "rate": 1200,
-        "amount": 1200
+        "id": "m_1794760201956_lisz",
+        "x": 37.1,
+        "y": 31.5,
+        "type": "DENT",
+        "createdAt": "2026-11-15T16:30:01.956Z"
       },
       {
-        "desc": "NGK Iridium Spark Plugs Set",
-        "qty": 4,
-        "rate": 3500,
-        "amount": 14000
+        "id": "m_1794760203181_wghu",
+        "x": 32.9,
+        "y": 51.1,
+        "type": "SCRATCH",
+        "createdAt": "2026-11-15T16:30:03.181Z"
+      },
+      {
+        "id": "m_1794760204597_yl6l",
+        "x": 57.7,
+        "y": 40.9,
+        "type": "CHIP",
+        "createdAt": "2026-11-15T16:30:04.597Z"
+      },
+      {
+        "id": "m_1794760206270_w173",
+        "x": 29,
+        "y": 22.8,
+        "type": "RUST",
+        "createdAt": "2026-11-15T16:30:06.270Z"
+      },
+      {
+        "id": "m_1794760206631_si09",
+        "x": 28.9,
+        "y": 50,
+        "type": "RUST",
+        "createdAt": "2026-11-15T16:30:06.631Z"
+      },
+      {
+        "id": "m_1794760207462_w1k5",
+        "x": 31.9,
+        "y": 32.6,
+        "type": "RUST",
+        "createdAt": "2026-11-15T16:30:07.462Z"
       }
     ],
-    "labour": 3500,
-    "otherCharges": 0,
-    "discount": 0,
-    "advance": 5000,
-    "subTotal": 18700,
-    "netPayable": 18700,
-    "balance": 13700,
-    "serviceAdvisor": "Service Incharge",
-    "damageMarkers": [],
-    "paymentCleared": false,
-    "closedAt": "2026-11-15T11:54:30.207Z"
+    "customer_concern": "gari ka 3rd gear kbhi kbhi phas jata hai, kbi bilkul thk work krta hai, phr gari band kr doobara chalao tu kam krta hai, or gari road py bubbling b krti hai smooth nhi chlti",
+    "ai_diagnosis_result": {
+      "plain_english_explanation": "Comprehensive diagnostic analysis for Honda Civic RS (2022). Based on the symptoms described, we recommend performing an electronic OBD-II diagnostic scan, inspecting drive belts and fluids, and executing necessary preventative service.",
+      "mechanical_root_cause": "General mechanical and drivetrain performance deficit. Requires comprehensive OBD-II live data stream inspection, engine sensor validation, and primary maintenance.",
+      "recommended_departments": [
+        "Mechanical",
+        "Electrical",
+        "Inspection",
+        "General Service"
+      ],
+      "work_to_be_done": "1. Connect OBD-II diagnostic scanner and perform full health report of Engine, Transmission, and ABS modules.\n2. Inspect drive belts, spark plugs, throttle body carbon buildup, and fluid levels.\n3. Clean throttle body and Mass Airflow (MAF) sensor.\n4. Complete 35-point safety check and clear stored DTC error codes.",
+      "suggested_parts": [
+        {
+          "sku": "GEN-SCAN-OBD",
+          "description": "Comprehensive Computerized OBD-II Diagnostic Scan",
+          "qty": 1,
+          "estimated_rate_pkr": 2500,
+          "classification": "Consumables"
+        },
+        {
+          "sku": "GEN-CLNR-THROT",
+          "description": "Liqui Moly / Würth Throttle Valve System Cleaner",
+          "qty": 1,
+          "estimated_rate_pkr": 1800,
+          "classification": "Consumables"
+        },
+        {
+          "sku": "GEN-FLTR-AIR",
+          "description": "OEM Engine Air Intake Filter Element",
+          "qty": 1,
+          "estimated_rate_pkr": 2800,
+          "classification": "OEM Parts"
+        }
+      ]
+    },
+    "work_to_be_done": "1. Connect OBD-II diagnostic scanner and perform full health report of Engine, Transmission, and ABS modules.\n2. Inspect drive belts, spark plugs, throttle body carbon buildup, and fluid levels.\n3. Clean throttle body and Mass Airflow (MAF) sensor.\n4. Complete 35-point safety check and clear stored DTC error codes.",
+    "departments": [
+      "Mechanical",
+      "Electrical",
+      "Inspection",
+      "General Service",
+      "Alignment"
+    ],
+    "itemized_parts": [
+      {
+        "id": "P-1",
+        "sku": "",
+        "description": "Throttle Body Cleaner Chemical",
+        "qty": 1,
+        "rate": 1200,
+        "amount": 1200,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "P-2",
+        "sku": "",
+        "description": "NGK Iridium Spark Plugs Set",
+        "qty": 4,
+        "rate": 3500,
+        "amount": 14000,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794760083901_0",
+        "sku": "GEN-SCAN-OBD",
+        "description": "Comprehensive Computerized OBD-II Diagnostic Scan",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760083901_1",
+        "sku": "GEN-CLNR-THROT",
+        "description": "Liqui Moly / Würth Throttle Valve System Cleaner",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760083901_2",
+        "sku": "GEN-FLTR-AIR",
+        "description": "OEM Engine Air Intake Filter Element",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794760139440_0",
+        "sku": "GEN-SCAN-OBD",
+        "description": "Comprehensive Computerized OBD-II Diagnostic Scan",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760139440_1",
+        "sku": "GEN-CLNR-THROT",
+        "description": "Liqui Moly / Würth Throttle Valve System Cleaner",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760139440_2",
+        "sku": "GEN-FLTR-AIR",
+        "description": "OEM Engine Air Intake Filter Element",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800,
+        "classification": "OEM Parts"
+      },
+      {
+        "id": "ai_1794760146694_0",
+        "sku": "GEN-SCAN-OBD",
+        "description": "Comprehensive Computerized OBD-II Diagnostic Scan",
+        "qty": 1,
+        "rate": 2500,
+        "amount": 2500,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760146694_1",
+        "sku": "GEN-CLNR-THROT",
+        "description": "Liqui Moly / Würth Throttle Valve System Cleaner",
+        "qty": 1,
+        "rate": 1800,
+        "amount": 1800,
+        "classification": "Consumables"
+      },
+      {
+        "id": "ai_1794760146694_2",
+        "sku": "GEN-FLTR-AIR",
+        "description": "OEM Engine Air Intake Filter Element",
+        "qty": 1,
+        "rate": 2800,
+        "amount": 2800,
+        "classification": "OEM Parts"
+      }
+    ],
+    "labor_charges": 3500,
+    "alignment_charges": 0,
+    "discount_amount": 0,
+    "advance_deposit": 5000,
+    "parts_total": 36500,
+    "net_payable": 40000,
+    "balance_remaining": 35000,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Staff Advisor",
+    "delivered_by": "",
+    "created_at": "2026-11-15T10:30:00.000Z",
+    "updated_at": "2026-11-15T16:31:24.514Z",
+    "closed_at": "2026-11-15T16:31:24.514Z"
   },
   {
     "id": "ASH-570539",
-    "createdAt": "2026-11-15T11:04:15.778Z",
-    "deliveryDue": "2026-11-15T16:04:15.778Z",
-    "status": "In Progress",
-    "currentBay": "Bay 1",
-    "customer": {
-      "name": "Ali",
-      "phone": "03364331888",
-      "address": "Lahore"
+    "job_card_number": "ASH-570539",
+    "customer_name": "Ali",
+    "customer_phone": "03364331888",
+    "customer_address": "Lahore",
+    "plate_number": "BXE 007",
+    "make_model": "Kia Sportage",
+    "variant": "",
+    "mileage_km": 55000,
+    "body_color": "White",
+    "service_advisor": "Master Advisor",
+    "bay_category": "WORKSHOP",
+    "bay_number": 1,
+    "status": "IN_PROGRESS",
+    "fuel_level_percent": 70,
+    "handed_over_inventory": {
+      "spare_wheel": true,
+      "tools": true,
+      "mats": true,
+      "valuables_cleared": true
     },
-    "vehicle": {
-      "plateNo": "BXE 007",
-      "makeModel": "Kia Sportage",
-      "mileage": "55000",
-      "color": "White",
-      "fuelLevel": 70
-    },
-    "inventory": {
-      "spareWheel": true,
-      "toolKit": true,
-      "floorMats": true,
-      "valuablesOut": true
-    },
+    "inspection_markers": [],
+    "customer_concern": "Gari aik trf khud ko khainchti hai, jhatky ly kr chlti hai, gear shift main b masla hai",
+    "ai_diagnosis_result": null,
+    "work_to_be_done": "1. Inspect front suspension geometry, lower control arm bushings, and steering tie rod ends; perform 3D computerized wheel alignment and calibrate steering angle sensor.\n2. Perform complete EFI diagnostic tune-up: scan OBD-II for misfire codes, replace fouled spark plugs, chemically clean fuel injectors, and service throttle body.\n3. Inspect manual transmission and clutch assembly: check gear linkage cable alignment, drain and refill burnt gear oil, remove gearbox to inspect/replace worn 3rd gear synchronizer brass ring and clutch release bearing.",
     "departments": [
       "Mechanical",
       "Electrical",
       "AC Service"
     ],
-    "concern": "Gari aik trf khud ko khainchti hai, jhatky ly kr chlti hai, gear shift main b masla hai",
-    "workToBeDone": "1. Inspect front suspension geometry, lower control arm bushings, and steering tie rod ends; perform 3D computerized wheel alignment and calibrate steering angle sensor.\n2. Perform complete EFI diagnostic tune-up: scan OBD-II for misfire codes, replace fouled spark plugs, chemically clean fuel injectors, and service throttle body.\n3. Inspect manual transmission and clutch assembly: check gear linkage cable alignment, drain and refill burnt gear oil, remove gearbox to inspect/replace worn 3rd gear synchronizer brass ring and clutch release bearing.",
-    "parts": [
+    "itemized_parts": [
       {
-        "desc": "Front Lower Control Arm Bushings Set",
+        "id": "P-1",
+        "sku": "",
+        "description": "Front Lower Control Arm Bushings Set",
         "qty": 1,
         "rate": 8500,
-        "amount": 8500
+        "amount": 8500,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "Tie Rod Ends (Pair)",
+        "id": "P-2",
+        "sku": "",
+        "description": "Tie Rod Ends (Pair)",
         "qty": 1,
         "rate": 4200,
-        "amount": 4200
+        "amount": 4200,
+        "classification": "OEM Parts"
       },
       {
-        "desc": "OEM Spark Plugs Set",
+        "id": "P-3",
+        "sku": "",
+        "description": "OEM Spark Plugs Set",
         "qty": 1,
         "rate": 6500,
-        "amount": 6500
+        "amount": 6500,
+        "classification": "OEM Parts"
       }
     ],
-    "labour": 8000,
-    "otherCharges": 0,
-    "discount": 1000,
-    "advance": 26200,
-    "subTotal": 27200,
-    "netPayable": 26200,
-    "balance": 0,
-    "serviceAdvisor": "Service Incharge",
-    "damageMarkers": [],
-    "paymentCleared": false,
-    "closedAt": "2026-11-15T11:45:10.777Z"
+    "labor_charges": 8000,
+    "alignment_charges": 0,
+    "discount_amount": 1000,
+    "advance_deposit": 26200,
+    "parts_total": 19200,
+    "net_payable": 26200,
+    "balance_remaining": 0,
+    "quality_checks": {
+      "exterior_clean": false,
+      "interior_clean": false,
+      "engine_area_clean": false,
+      "all_systems_checked": false,
+      "test_drive_done": false,
+      "no_warning_lights": false,
+      "work_completed": false,
+      "customer_satisfied": false
+    },
+    "received_by": "Staff Advisor",
+    "delivered_by": "",
+    "created_at": "2026-11-15T11:04:15.778Z",
+    "updated_at": "2026-11-15T16:30:19.519Z",
+    "closed_at": "2026-11-15T11:45:10.777Z"
   }
 ]

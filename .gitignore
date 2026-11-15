@@ -1,6 +1,30 @@
-node_modules/
-.env
-config.json
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
 .DS_Store
+*.pem
 Thumbs.db
 *.log
+install_git.ps1
+
+# config and sensitive keys
+config.json
+.env*.local
+.env
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
