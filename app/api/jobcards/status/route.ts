@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
-import { JobCard } from '@/types';
-
-const DATA_FILE = path.join(process.cwd(), 'data', 'jobcards.json');
+import { getLocalJobCards, saveLocalJobCards } from '@/lib/dataStore';
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -16,50 +12,49 @@ export async function PATCH(req: NextRequest) {
 
     const now = new Date().toISOString();
 
-    // Optimistic concurrency locking: check if lastUpdatedAt is specified
+    // Optimistic concurrency locking in Supabase: check if lastUpdatedAt is specified
     if (isSupabaseConfigured && supabase) {
-      let query = supabase
-        .from('job_cards')
-        .update({
-          bay_category,
-          bay_number,
-          status,
-          updated_at: now,
-          ...(status === 'CLOSED_PAID' ? { closed_at: now } : {}),
-        })
-        .eq('id', id);
+      try {
+        let query = supabase
+          .from('job_cards')
+          .update({
+            bay_category,
+            bay_number,
+            status,
+            updated_at: now,
+            ...(status === 'CLOSED_PAID' ? { closed_at: now } : {}),
+          })
+          .eq('id', id);
 
-      if (lastUpdatedAt) {
-        query = query.eq('updated_at', lastUpdatedAt);
-      }
+        if (lastUpdatedAt) {
+          query = query.eq('updated_at', lastUpdatedAt);
+        }
 
-      const { data, error } = await query.select();
-      if (error) {
-        console.warn('Supabase status update error:', error);
-      } else if (lastUpdatedAt && (!data || data.length === 0)) {
-        return NextResponse.json(
-          { error: 'Conflict: This job card was just updated by another advisor. Reloading latest state.' },
-          { status: 409 }
-        );
+        const { data, error } = await query.select();
+        if (error) {
+          console.warn('Supabase status update error:', error);
+        } else if (lastUpdatedAt && (!data || data.length === 0)) {
+          return NextResponse.json(
+            { error: 'Conflict: This job card was just updated by another advisor. Reloading latest state.' },
+            { status: 409 }
+          );
+        }
+      } catch (err) {
+        console.warn('Supabase status update exception:', err);
       }
     }
 
-    // Update local file data
-    let cards: JobCard[] = [];
-    if (fs.existsSync(DATA_FILE)) {
-      cards = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    }
-
+    // Update local data safely (In-memory + Writable tmp / seed)
+    const cards = [...getLocalJobCards()];
     const cardIndex = cards.findIndex((c: any) => c.id === id || c.job_card_number === id);
     if (cardIndex === -1) {
       return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
     }
 
-    const targetCard = cards[cardIndex];
+    const targetCard = { ...cards[cardIndex] };
 
-    // Optimistic lock check on local file
+    // Optimistic lock check on local record
     if (lastUpdatedAt && targetCard.updated_at && targetCard.updated_at !== lastUpdatedAt) {
-      // Small tolerance or conflict
       console.warn(`Local lock conflict: target=${targetCard.updated_at}, received=${lastUpdatedAt}`);
     }
 
@@ -72,13 +67,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     cards[cardIndex] = targetCard;
-    fs.writeFileSync(DATA_FILE, JSON.stringify(cards, null, 2), 'utf-8');
+    saveLocalJobCards(cards);
 
-    return NextResponse.json({
-      success: true,
-      data: targetCard,
-    });
+    return NextResponse.json({ success: true, data: targetCard });
   } catch (err: any) {
+    console.error('Error in status PATCH route:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }
