@@ -32,9 +32,6 @@ export default function LoungeTVPage() {
   const [playlistId, setPlaylistId] = useState(
     process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID || 'PLfWI-z1AjtsA'
   );
-  const [videoId, setVideoId] = useState(
-    process.env.NEXT_PUBLIC_YOUTUBE_VIDEO_ID || '3m4ApRBJmlo'
-  );
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -145,24 +142,60 @@ export default function LoungeTVPage() {
           playerRef.current = new window.YT.Player('youtube-player-container', {
             height: '100%',
             width: '100%',
-            videoId: videoId,
             playerVars: {
               listType: 'playlist',
               list: playlistId,
               autoplay: 1,
-              loop: 1,
               controls: 1,
               modestbranding: 1,
               rel: 0,
               playsinline: 1,
+              enablejsapi: 1,
             },
             events: {
               onReady: (event: any) => {
-                event.target.playVideo();
-                if (isAudioUnlocked) {
-                  event.target.unMute();
-                  event.target.setVolume(100);
+                try {
+                  // Crucial: setLoop(true) tells the player to loop the whole playlist across all videos
+                  event.target.setLoop(true);
+                  event.target.playVideo();
+                  if (isAudioUnlocked) {
+                    event.target.unMute();
+                    event.target.setVolume(100);
+                  }
+                } catch (e) {
+                  console.warn('YouTube onReady setup error:', e);
                 }
+              },
+              onStateChange: (event: any) => {
+                // When a video finishes (event.data === 0 or YT.PlayerState.ENDED)
+                if (event.data === 0) {
+                  try {
+                    const playlist = event.target.getPlaylist();
+                    const currentIndex = event.target.getPlaylistIndex();
+                    if (Array.isArray(playlist) && playlist.length > 0) {
+                      if (currentIndex >= playlist.length - 1) {
+                        // Reached the end of the full playlist -> restart from first video (index 0)
+                        event.target.playVideoAt(0);
+                      } else {
+                        // Advance to the next video in the playlist
+                        event.target.nextVideo();
+                      }
+                    } else {
+                      event.target.nextVideo();
+                    }
+                  } catch (e) {
+                    console.warn('Playlist advancement error:', e);
+                    try {
+                      event.target.playVideo();
+                    } catch (_) {}
+                  }
+                }
+              },
+              onError: (event: any) => {
+                console.warn('YouTube playback error on video, advancing to next in playlist:', event.data);
+                try {
+                  event.target.nextVideo();
+                } catch (_) {}
               },
             },
           });
@@ -196,9 +229,10 @@ export default function LoungeTVPage() {
       await playWebAudioChime();
     } catch (_) {}
 
-    // 2. Unmute YouTube player
+    // 2. Unmute YouTube player & enforce playlist looping
     try {
       if (playerRef.current) {
+        if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
         if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
         if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
         if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
