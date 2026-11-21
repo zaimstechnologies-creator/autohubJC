@@ -116,22 +116,16 @@ END $$;
 ALTER TABLE job_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
--- Allow anon and authenticated full read/write for workshop staff operation
--- (In production, replace with specific auth role policies if using Supabase Auth)
-CREATE POLICY "Allow public full access to job_cards" 
-  ON job_cards FOR ALL 
-  TO public 
-  USING (true) 
-  WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public full access to job_cards" ON job_cards;
+DROP POLICY IF EXISTS "Allow public full access to app_settings" ON app_settings;
 
-CREATE POLICY "Allow public full access to app_settings" 
-  ON app_settings FOR ALL 
-  TO public 
-  USING (true) 
-  WITH CHECK (true);
+REVOKE ALL PRIVILEGES ON TABLE job_cards, app_settings
+  FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE job_cards, app_settings
+  TO service_role;
 
--- 6. Public Anonymized Tracking RPC Function (Strict Privacy Wall)
--- Returns ONLY non-sensitive progress info. NEVER returns customer name, phone, address, or financial ledger.
+-- 6. Server-side Anonymized Tracking RPC Function (Strict Privacy Wall)
+-- Returns only progress information and is callable only by the server service role.
 CREATE OR REPLACE FUNCTION get_public_vehicle_status(p_plate TEXT)
 RETURNS TABLE (
   job_card_number TEXT,
@@ -147,6 +141,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
   SELECT 
     job_card_number,
@@ -165,3 +160,7 @@ AS $$
   ORDER BY created_at DESC
   LIMIT 1;
 $$;
+
+REVOKE ALL ON FUNCTION get_public_vehicle_status(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_public_vehicle_status(TEXT)
+  TO service_role;

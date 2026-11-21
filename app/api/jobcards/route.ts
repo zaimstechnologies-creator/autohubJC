@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
 import { getLocalJobCards, saveLocalJobCards, normalizeJobCard } from '@/lib/dataStore';
 
 export async function GET(req: NextRequest) {
@@ -7,10 +7,10 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id');
 
   // If Supabase is configured, try querying Supabase first
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseServerConfigured && supabaseServer) {
     try {
       if (id) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseServer
           .from('job_cards')
           .select('*')
           .or(`id.eq.${id},job_card_number.eq.${id}`)
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
           return NextResponse.json({ success: true, data: normalizeJobCard(data) });
         }
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseServer
           .from('job_cards')
           .select('*')
           .order('created_at', { ascending: false });
@@ -60,9 +60,9 @@ export async function POST(req: NextRequest) {
     });
 
     // Save to Supabase if configured
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseServerConfigured && supabaseServer) {
       try {
-        await supabase.from('job_cards').insert([normalized]);
+        await supabaseServer.from('job_cards').insert([normalized]);
       } catch (err) {
         console.warn('Supabase POST insert failed:', err);
       }
@@ -98,9 +98,9 @@ export async function PUT(req: NextRequest) {
       ...(body.status === 'CLOSED_PAID' && !body.closed_at ? { closed_at: now } : {}),
     });
 
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseServerConfigured && supabaseServer) {
       try {
-        await supabase
+        await supabaseServer
           .from('job_cards')
           .update(normalized)
           .eq('id', normalized.id);

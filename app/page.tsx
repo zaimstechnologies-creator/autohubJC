@@ -10,12 +10,13 @@ import {
   ArrowRight,
   Car,
 } from 'lucide-react';
+import AuthSessionButton from '@/components/AuthSessionButton';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#070b14] via-[#0B1221] to-[#070b14] text-white flex flex-col justify-between font-sans">
       {/* Top Header */}
-      <header className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between">
+      <header className="px-6 py-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-y-3">
         <div className="flex items-center gap-3">
           <div className="bg-white p-1 rounded-xl shadow-lg border border-slate-700/50 flex items-center justify-center">
             <img
@@ -39,6 +40,7 @@ export default function HomePage() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             12 Bays Online
           </span>
+          <AuthSessionButton />
         </div>
       </header>
 
@@ -126,7 +128,7 @@ export default function HomePage() {
               </div>
               <div>
                 <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
-                  Public Mobile Web
+                  Vehicle Tracking
                 </span>
                 <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition">
                   Customer Vehicle Track

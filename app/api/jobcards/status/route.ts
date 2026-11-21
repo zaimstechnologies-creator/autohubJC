@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
 import { getLocalJobCards, saveLocalJobCards } from '@/lib/dataStore';
 
 export async function PATCH(req: NextRequest) {
@@ -13,9 +13,9 @@ export async function PATCH(req: NextRequest) {
     const now = new Date().toISOString();
 
     // Optimistic concurrency locking in Supabase: check if lastUpdatedAt is specified
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseServerConfigured && supabaseServer) {
       try {
-        let query = supabase
+        let query = supabaseServer
           .from('job_cards')
           .update({
             bay_category,

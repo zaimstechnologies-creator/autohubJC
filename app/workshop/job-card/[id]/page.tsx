@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { JobCard } from '@/types';
 import JobCardForm from '@/components/JobCardForm';
 import PrintJobCardA4 from '@/components/PrintJobCardA4';
+import AuthSessionButton from '@/components/AuthSessionButton';
 import { Printer, ArrowLeft, Edit3, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -109,6 +110,7 @@ export default function JobCardDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <AuthSessionButton />
           {isPrintMode ? (
             <button
               type="button"

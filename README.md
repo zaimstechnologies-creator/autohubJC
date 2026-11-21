@@ -1,4 +1,4 @@
-# Al Shaheen Auto Hub — Enterprise Workshop Management & TV Lounge System
+# Al Shaheen Auto Hub - Enterprise Workshop, AI Diagnostics & Lounge TV System
 
 A comprehensive, screen-responsive workshop management application built for **Al Shaheen Auto Hub** (DHA Phase 6, Lahore), designed to run on tablets, smartphones, desktop terminals, and Smart TVs in the customer waiting lounge.
 
@@ -7,7 +7,7 @@ A comprehensive, screen-responsive workshop management application built for **A
 ## 🌟 Key Capabilities & New Features
 
 ### 1. 📺 Waiting Lounge TV Display (Hospital-Style Queue Radar)
-- **URL Route**: `/tv` or `/?mode=tv`
+- **URL Route**: `/tv` (sign-in required)
 - **Split-Screen Design for Smart TVs (55"+ 1080p / 4K)**:
   - **Left Side (62%) — Live Bay Radar & Queue Board**:
     - High-contrast, large-font display readable across the waiting lounge.
@@ -25,10 +25,10 @@ A comprehensive, screen-responsive workshop management application built for **A
     - Embedded video player that continuously plays your official YouTube channel videos and Shorts to keep waiting customers entertained.
     - Sound toggle (`🔊 Sound ON` / `🔇 Muted`), Next Video button, and YouTube Setup modal.
   - **Bottom Ticker**: Running marquee announcement with lounge Wi-Fi password, complimentary tea/coffee reminders, and workshop helpline.
-  - **TV Remote / Public Kiosk Proof**: Clicking anywhere or pressing remote buttons keeps the screen locked in TV mode. Exiting back to the management portal requires clicking the discrete lock icon and entering the Staff PIN.
+  - **TV Remote / Kiosk**: The lounge display is available after signing in to the application.
 
-### 2. 📱 Customer Self-Service Mobile Tracker
-- **URL Route**: `/track` or `/?mode=track`
+### 2. 📱 Vehicle Tracking
+- **URL Route**: `/track` (sign-in required)
 - Customers can track their vehicle live from their smartphone while waiting in the lounge or at a nearby cafe:
   - Enter Vehicle Plate Number (e.g., `AQP 007` or `LEA-21-4890`).
   - View real-time assigned workshop bay.
@@ -40,15 +40,13 @@ A comprehensive, screen-responsive workshop management application built for **A
   - One-click **WhatsApp Service Advisor** button with pre-filled vehicle details.
   - One-click **Download / View Job Card A4 PDF** button.
 
-### 3. 🔒 Staff PIN & Security System
-- **Default Staff PIN**: `1234`
-- Protects the Workshop Management backend (`dbView` and `editorView`) so customers in the waiting room cannot see customer phone numbers, addresses, costs, or internal notes.
-- Configurable in the top bar (`🔒 Lock / Staff PIN`).
-- Keypad supports tablet touchscreens and numeric input.
+### 3. 🔒 Application Login
+- Every application page and API requires a server-verified session; only login/logout endpoints and static assets are unauthenticated.
+- After signing in, the dashboard, tracking, and lounge TV are available in the same authenticated session.
+- Credentials are configured using server-only environment variables; no default username or password is shipped.
 
 ### 4. ⚡ Real-Time Cross-Screen Sync
-- When a service advisor updates a car's bay on a tablet (e.g. from *Bay 2* to *Ready for Delivery*), the **Waiting Lounge TV display immediately updates in real-time** and rings the chime alert without any page reload!
-- Powered by `BroadcastChannel` and `localStorage` events.
+- Workshop data refreshes through authenticated APIs, and the lounge queue refreshes automatically every six seconds.
 
 ### 5. 🤖 Gemini AI Diagnostics & Tablet Stylus Job Cards
 - Built-in Google Gemini AI automotive diagnosis engine (Free Tier compatible).
@@ -102,16 +100,30 @@ Follow the 3 prompts and your app is live!
 
 ---
 
+## 🔐 Admin Login Configuration
+
+The login screen is available at `/login`. Configure these values in `.env.local` for development and in the deployment's secret settings for production:
+
+- `AUTH_USERNAME`: administrator account name.
+- `AUTH_PASSWORD_HASH`: generated using `node scripts/hash-password.cjs` (the password is entered without echo and only the scrypt hash is printed).
+- `AUTH_SECRET`: a random secret with at least 32 bytes. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
+- `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase key used by private API routes. Never prefix it with `NEXT_PUBLIC_`.
+
+Do not commit `.env.local` or share these secrets. `SUPABASE_SERVICE_ROLE_KEY` is only used on the server. Apply [supabase/schema.sql](./supabase/schema.sql) to remove the previous unrestricted database policies and restrict the tracking function to server-side use.
+
+Sessions use an HttpOnly, SameSite=Strict cookie. They expire after 8 hours, or 14 days when “Stay signed in” is selected. There is no refresh token for this single administrator account; sign in again after expiration. Logout clears the browser cookie; rotate `AUTH_SECRET` to invalidate all issued sessions. Configure login rate limiting at the hosting edge before production deployment.
+
 ## 💻 Local Testing & Development
 
 You can test the full multi-screen experience on your local computer before deploying:
 
 ```bash
-# Start local server
-node server.js
+# Start the Next.js app
+npm run dev
 ```
 Then open:
-- **Workshop Staff Portal**: `http://localhost:3000/workshop` (PIN: `1234`)
+- **Admin Login**: `http://localhost:3000/login`
+- **Workshop Portal**: `http://localhost:3000/workshop`
 - **Waiting Lounge TV Display**: `http://localhost:3000/tv`
 - **Customer Mobile Tracker**: `http://localhost:3000/track`
 

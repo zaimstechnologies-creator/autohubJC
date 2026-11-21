@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
 import LoungeAudioEngine, { playWebAudioChime, formatPlateForSpeech } from '@/components/LoungeAudioEngine';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import AuthSessionButton from '@/components/AuthSessionButton';
 import {
   Volume2,
   VolumeX,
@@ -18,6 +18,20 @@ import {
   Volume1,
 } from 'lucide-react';
 
+type LoungeJobCard = Pick<
+  JobCard,
+  | 'id'
+  | 'job_card_number'
+  | 'plate_number'
+  | 'make_model'
+  | 'variant'
+  | 'bay_category'
+  | 'bay_number'
+  | 'status'
+  | 'departments'
+  | 'updated_at'
+>;
+
 declare global {
   interface Window {
     onYouTubeIframeAPIReady?: () => void;
@@ -26,8 +40,8 @@ declare global {
 }
 
 export default function LoungeTVPage() {
-  const [jobCards, setJobCards] = useState<JobCard[]>([]);
-  const [announcementQueue, setAnnouncementQueue] = useState<JobCard[]>([]);
+  const [jobCards, setJobCards] = useState<LoungeJobCard[]>([]);
+  const [announcementQueue, setAnnouncementQueue] = useState<LoungeJobCard[]>([]);
   const [announcedCardIds, setAnnouncedCardIds] = useState<Set<string>>(new Set());
   const [playlistId, setPlaylistId] = useState(
     process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID || 'PLfWI-z1AjtsA'
@@ -70,10 +84,10 @@ export default function LoungeTVPage() {
   // Fetch job cards
   const fetchCards = async () => {
     try {
-      const res = await fetch('/api/jobcards', { cache: 'no-store' });
+      const res = await fetch('/api/tv/queue', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        const cards: JobCard[] = json.data || [];
+        const cards: LoungeJobCard[] = json.data || [];
         setJobCards(cards);
 
         // Detect newly ready vehicles for announcement queue
@@ -102,27 +116,6 @@ export default function LoungeTVPage() {
 
   useEffect(() => {
     fetchCards();
-
-    // Supabase Realtime subscription
-    if (isSupabaseConfigured && supabase) {
-      const channel = supabase
-        .channel('tv_realtime_jobcards')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'job_cards' },
-          () => {
-            fetchCards();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        if (supabase) {
-          supabase.removeChannel(channel);
-        }
-      };
-    }
-
     const timer = setInterval(fetchCards, 6000);
     return () => clearInterval(timer);
   }, [announcedCardIds]);
@@ -393,6 +386,7 @@ export default function LoungeTVPage() {
             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
               {currentDate || 'PKT Lahore'}
             </div>
+            <AuthSessionButton />
           </div>
         </div>
       </header>

@@ -6,9 +6,9 @@
 const API_BASE = '/api';
 const LOCAL_STORAGE_KEY = 'al_shaheen_job_cards_v3';
 
-function getStaffAuthHeaders(extraHeaders = {}) {
+function getAdminAuthHeaders(extraHeaders = {}) {
     const token = (typeof window !== 'undefined') ?
-        (localStorage.getItem('al_shaheen_staff_token') || sessionStorage.getItem('al_shaheen_staff_token') || '') : '';
+        (localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '') : '';
     const headers = { ...extraHeaders };
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -37,7 +37,7 @@ class JobCardAPI {
 
             this.ws.onopen = () => {
                 const token = (typeof window !== 'undefined') ?
-                    (localStorage.getItem('al_shaheen_staff_token') || sessionStorage.getItem('al_shaheen_staff_token') || '') : '';
+                    (localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '') : '';
                 if (token && this.ws && this.ws.readyState === WebSocket.OPEN) {
                     try {
                         this.ws.send(JSON.stringify({ type: 'auth', token }));
@@ -110,13 +110,13 @@ class JobCardAPI {
         if (typeof window === 'undefined') return;
         setInterval(async () => {
             if (typeof document !== 'undefined' && document.hidden) return;
-            const token = localStorage.getItem('al_shaheen_staff_token') || sessionStorage.getItem('al_shaheen_staff_token') || '';
+            const token = localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '';
             if (!token) return;
 
             try {
                 const res = await fetch(`${API_BASE}/jobcards?_t=${Date.now()}`, {
                     cache: 'no-store',
-                    headers: getStaffAuthHeaders({ 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+                    headers: getAdminAuthHeaders({ 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
                 });
 
                 if (res.status === 401) {
@@ -139,12 +139,12 @@ class JobCardAPI {
         }, 4000);
     }
 
-    // Fetch all job cards (Protected with staff auth - Direct Server Authority)
+    // Fetch all job cards (Protected with admin auth - Direct Server Authority)
     async getAllJobCards() {
         try {
             const res = await fetch(`${API_BASE}/jobcards?_t=${Date.now()}`, {
                 cache: 'no-store',
-                headers: getStaffAuthHeaders({ 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
+                headers: getAdminAuthHeaders({ 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' })
             });
 
             if (res.status === 401) {
@@ -205,7 +205,7 @@ class JobCardAPI {
         try {
             const res = await fetch(`${API_BASE}/jobcards`, {
                 method: 'POST',
-                headers: getStaffAuthHeaders({ 'Content-Type': 'application/json' }),
+                headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(card)
             });
             if (res.status === 401) {
@@ -231,7 +231,7 @@ class JobCardAPI {
         try {
             const res = await fetch(`${API_BASE}/jobcards/${encodeURIComponent(id)}/bay`, {
                 method: 'PUT',
-                headers: getStaffAuthHeaders({ 'Content-Type': 'application/json' }),
+                headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ bay, status })
             });
 
@@ -270,7 +270,7 @@ class JobCardAPI {
         try {
             const res = await fetch(`${API_BASE}/jobcards/${encodeURIComponent(id)}`, {
                 method: 'DELETE',
-                headers: getStaffAuthHeaders()
+                headers: getAdminAuthHeaders()
             });
             if (res.status === 401) {
                 window.dispatchEvent(new CustomEvent('hub-auth-required'));

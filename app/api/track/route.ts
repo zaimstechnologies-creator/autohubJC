@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
 import { PublicVehicleStatus } from '@/types';
 import { getLocalJobCards } from '@/lib/dataStore';
 
@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
   const cleanQuery = plateQuery.toUpperCase().replace(/\s+/g, '');
 
   // 1. If Supabase configured, call RPC function or strict select
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseServerConfigured && supabaseServer) {
     try {
-      const { data, error } = await supabase.rpc('get_public_vehicle_status', {
+      const { data, error } = await supabaseServer.rpc('get_public_vehicle_status', {
         p_plate: cleanQuery,
       });
 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       }
 
       // Safe fallback select
-      const { data: directData, error: directErr } = await supabase
+      const { data: directData, error: directErr } = await supabaseServer
         .from('job_cards')
         .select('job_card_number, plate_number, make_model, variant, bay_category, bay_number, status, departments, updated_at, created_at')
         .neq('status', 'CLOSED_PAID')

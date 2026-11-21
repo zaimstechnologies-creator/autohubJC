@@ -8,7 +8,7 @@ import {
   CAR_WASH_BAYS,
 } from '@/types';
 import BayMatrixCard from '@/components/BayMatrixCard';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import AuthSessionButton from '@/components/AuthSessionButton';
 import {
   Wrench,
   Droplets,
@@ -42,7 +42,6 @@ export default function WorkshopDashboard() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
   const [geminiKeyOverride, setGeminiKeyOverride] = useState('');
-
   // Fetch job cards
   const loadJobCards = async () => {
     try {
@@ -60,28 +59,6 @@ export default function WorkshopDashboard() {
 
   useEffect(() => {
     loadJobCards();
-
-    // Supabase Realtime Subscription if configured
-    if (isSupabaseConfigured && supabase) {
-      const channel = supabase
-        .channel('workshop_realtime_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'job_cards' },
-          () => {
-            loadJobCards();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        if (supabase) {
-          supabase.removeChannel(channel);
-        }
-      };
-    }
-
-    // Interval fallback poll every 8s
     const timer = setInterval(loadJobCards, 8000);
     return () => clearInterval(timer);
   }, []);
@@ -267,6 +244,8 @@ export default function WorkshopDashboard() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+
+          <AuthSessionButton />
 
           <Link
             href="/workshop/job-card/new"

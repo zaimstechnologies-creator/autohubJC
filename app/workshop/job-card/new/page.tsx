@@ -6,6 +6,7 @@ import JobCardForm from '@/components/JobCardForm';
 import { JobCard } from '@/types';
 import { Loader2 } from 'lucide-react';
 import PrintJobCardA4 from '@/components/PrintJobCardA4';
+import AuthSessionButton from '@/components/AuthSessionButton';
 
 function NewJobCardContent() {
   const searchParams = useSearchParams();
@@ -53,6 +54,9 @@ function NewJobCardContent() {
 
   return (
     <>
+      <div className={printCard ? 'hidden print:hidden' : 'mb-4 flex justify-end print:hidden'}>
+        <AuthSessionButton />
+      </div>
       <div className={printCard ? 'hidden print:hidden' : ''}>
         <JobCardForm
           initialData={initialData as any}

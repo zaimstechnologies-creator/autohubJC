@@ -3,15 +3,15 @@
 // Enterprise Secure Token Authentication & Real-time Live Synchronizer
 // ==========================================================================
 
-const STAFF_AUTH_KEY = 'al_shaheen_staff_session';
-const STAFF_TOKEN_KEY = 'al_shaheen_staff_token';
+const ADMIN_AUTH_KEY = 'al_shaheen_admin_session';
+const ADMIN_TOKEN_KEY = 'al_shaheen_admin_token';
 
 let allCards = [];
 let activeDeptFilter = 'all';
 let searchQuery = '';
 
-function getStaffToken() {
-    return localStorage.getItem(STAFF_TOKEN_KEY) || sessionStorage.getItem(STAFF_TOKEN_KEY) || '';
+function getAdminToken() {
+    return localStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
 }
 
 let isActionPending = false;
@@ -19,19 +19,19 @@ let refreshDebounceTimer = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initial token existence check
-    if (checkStaffAuth()) {
+    if (checkAdminAuth()) {
         showAuthenticatedUi();
         // Asynchronously verify token signature with server
         verifySessionWithServer();
     } else {
-        showStaffLogin();
+        showAdminLogin();
     }
 
     await refreshDashboard(true);
 
     // Real-time event listener (Centralized backend push - debounced to execute one calm render)
     window.addEventListener('hub-data-updated', () => {
-        if (!checkStaffAuth() || isActionPending) return;
+        if (!checkAdminAuth() || isActionPending) return;
         if (refreshDebounceTimer) clearTimeout(refreshDebounceTimer);
         refreshDebounceTimer = setTimeout(() => {
             refreshDashboard();
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     window.addEventListener('hub-auth-required', () => {
-        staffLogout();
+        adminLogout();
     });
 
     handleInitialNavigation();
@@ -48,15 +48,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================================================
 // 1. SECURE TOKEN AUTHENTICATION & LOGIN GATE
 // ==========================================================================
-function checkStaffAuth() {
-    const token = getStaffToken();
+function checkAdminAuth() {
+    const token = getAdminToken();
     return !!token && token.length > 10;
 }
 
 async function verifySessionWithServer() {
-    const token = getStaffToken();
+    const token = getAdminToken();
     if (!token) {
-        showStaffLogin();
+        showAdminLogin();
         return false;
     }
     try {
@@ -64,7 +64,7 @@ async function verifySessionWithServer() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-            staffLogout();
+            adminLogout();
             return false;
         }
         const json = await res.json();
@@ -76,12 +76,12 @@ async function verifySessionWithServer() {
         // Network offline fallback: allow existing session
         return true;
     }
-    staffLogout();
+    adminLogout();
     return false;
 }
 
-function showStaffLogin() {
-    const authScreen = document.getElementById('staffAuthScreen');
+function showAdminLogin() {
+    const authScreen = document.getElementById('adminAuthScreen');
     const mainWrapper = document.getElementById('authenticatedAppWrapper');
     if (authScreen) authScreen.style.display = 'flex';
     if (mainWrapper) mainWrapper.style.display = 'none';
@@ -92,7 +92,7 @@ function showStaffLogin() {
 }
 
 function showAuthenticatedUi(userName) {
-    const authScreen = document.getElementById('staffAuthScreen');
+    const authScreen = document.getElementById('adminAuthScreen');
     const mainWrapper = document.getElementById('authenticatedAppWrapper');
     if (authScreen) authScreen.style.display = 'none';
     if (mainWrapper) mainWrapper.style.display = 'block';
@@ -100,10 +100,10 @@ function showAuthenticatedUi(userName) {
     try {
         let displayName = userName;
         if (!displayName) {
-            const session = JSON.parse(localStorage.getItem(STAFF_AUTH_KEY) || sessionStorage.getItem(STAFF_AUTH_KEY) || '{}');
+            const session = JSON.parse(localStorage.getItem(ADMIN_AUTH_KEY) || sessionStorage.getItem(ADMIN_AUTH_KEY) || '{}');
             displayName = session.user || 'Service Incharge';
         }
-        const userBadge = document.getElementById('staffUserBadge');
+        const userBadge = document.getElementById('adminUserBadge');
         if (userBadge) {
             userBadge.textContent = `👤 ${displayName}`;
         }
@@ -111,7 +111,7 @@ function showAuthenticatedUi(userName) {
 }
 
 // Strict Form-based Login with Server Verification
-async function handleStaffLoginSubmit(e) {
+async function handleAdminLoginSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const errBox = document.getElementById('authErrorMessage');
@@ -154,14 +154,14 @@ async function handleStaffLoginSubmit(e) {
             const storage = rememberMe ? localStorage : sessionStorage;
 
             // Clear previous session remnants
-            localStorage.removeItem(STAFF_TOKEN_KEY);
-            sessionStorage.removeItem(STAFF_TOKEN_KEY);
-            localStorage.removeItem(STAFF_AUTH_KEY);
-            sessionStorage.removeItem(STAFF_AUTH_KEY);
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+            localStorage.removeItem(ADMIN_AUTH_KEY);
+            sessionStorage.removeItem(ADMIN_AUTH_KEY);
 
             // Store verified token & session
-            storage.setItem(STAFF_TOKEN_KEY, data.token);
-            storage.setItem(STAFF_AUTH_KEY, JSON.stringify({
+            storage.setItem(ADMIN_TOKEN_KEY, data.token);
+            storage.setItem(ADMIN_AUTH_KEY, JSON.stringify({
                 user: data.user || username,
                 role: data.role || 'admin',
                 loginTime: Date.now()
@@ -194,9 +194,9 @@ async function handleStaffLoginSubmit(e) {
     }
 }
 
-// Secure Staff Logout
-function staffLogout() {
-    const token = getStaffToken();
+// Secure Admin Logout
+function adminLogout() {
+    const token = getAdminToken();
     if (token) {
         try {
             fetch('/api/auth/logout', {
@@ -206,21 +206,21 @@ function staffLogout() {
         } catch (e) {}
     }
 
-    localStorage.removeItem(STAFF_AUTH_KEY);
-    sessionStorage.removeItem(STAFF_AUTH_KEY);
-    localStorage.removeItem(STAFF_TOKEN_KEY);
-    sessionStorage.removeItem(STAFF_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_AUTH_KEY);
+    sessionStorage.removeItem(ADMIN_AUTH_KEY);
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
 
     allCards = [];
-    showStaffLogin();
+    showAdminLogin();
 }
 
-// Change Staff Admin Password
+// Change Admin Password
 async function changeAdminPassword() {
     const statusEl = document.getElementById('changePasswordStatus');
-    const currentPass = document.getElementById('currentStaffPasswordInput')?.value || '';
-    const newPass = document.getElementById('newStaffPasswordInput')?.value || '';
-    const confirmPass = document.getElementById('confirmStaffPasswordInput')?.value || '';
+    const currentPass = document.getElementById('currentAdminPasswordInput')?.value || '';
+    const newPass = document.getElementById('newAdminPasswordInput')?.value || '';
+    const confirmPass = document.getElementById('confirmAdminPasswordInput')?.value || '';
 
     if (statusEl) {
         statusEl.style.display = 'none';
@@ -257,7 +257,7 @@ async function changeAdminPassword() {
         return;
     }
 
-    const token = getStaffToken();
+    const token = getAdminToken();
     try {
         const res = await fetch('/api/auth/change-password', {
             method: 'POST',
@@ -275,9 +275,9 @@ async function changeAdminPassword() {
                 statusEl.style.color = '#166534';
                 statusEl.textContent = '✓ Password updated successfully! Please keep it secure.';
             }
-            document.getElementById('currentStaffPasswordInput').value = '';
-            document.getElementById('newStaffPasswordInput').value = '';
-            document.getElementById('confirmStaffPasswordInput').value = '';
+            document.getElementById('currentAdminPasswordInput').value = '';
+            document.getElementById('newAdminPasswordInput').value = '';
+            document.getElementById('confirmAdminPasswordInput').value = '';
         } else {
             if (statusEl) {
                 statusEl.style.display = 'block';
@@ -334,7 +334,7 @@ function showView(viewId) {
 let lastDashboardFingerprint = '';
 
 async function refreshDashboard(force = false) {
-    if (!checkStaffAuth()) return;
+    if (!checkAdminAuth()) return;
 
     let cards = [];
     if (window.HubAPI) {
@@ -801,6 +801,6 @@ window.setStatusViewFilter = setStatusViewFilter;
 window.closeJobCardPayment = closeJobCardPayment;
 window.reopenJobCard = reopenJobCard;
 window.deleteJobCardById = deleteJobCardById;
-window.handleStaffLoginSubmit = handleStaffLoginSubmit;
+window.handleAdminLoginSubmit = handleAdminLoginSubmit;
 window.changeAdminPassword = changeAdminPassword;
-window.staffLogout = staffLogout;
+window.adminLogout = adminLogout;

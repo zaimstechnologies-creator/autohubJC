@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -16,7 +15,6 @@ const DATA_FILE = path.join(__dirname, 'data', 'jobcards.json');
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
 // Middleware
-app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -175,24 +173,57 @@ app.get(['/api/live-stream', '/live-stream'], (req, res) => {
 // ENTERPRISE HMAC-SHA256 AUTHENTICATION & SECURITY ENGINE
 // Shields confidential client records (phones, addresses, financial billing)
 // ==========================================================================
-const AUTH_SECRET = process.env.AUTH_SECRET || 'AlShaheen_MasterSecretKey_2026_EnterpriseStaffAuth_Shield';
+const AUTH_SECRET = process.env.AUTH_SECRET || '';
 
 function getAdminCredentials() {
-    let username = 'admin';
-    let password = 'Shaheen@2026';
+    const username = process.env.AUTH_USERNAME && process.env.AUTH_USERNAME.trim();
+    const passwordHash = process.env.AUTH_PASSWORD_HASH || '';
+    if (!username || Buffer.byteLength(AUTH_SECRET, 'utf8') < 32 || !parsePasswordHash(passwordHash)) {
+        return null;
+    }
+    return { username, passwordHash };
+}
+
+function parsePasswordHash(value) {
+    const parts = value.split(':');
+    if (
+        parts.length !== 6 ||
+        parts[0] !== 'scrypt' ||
+        parts[1] !== '16384' ||
+        parts[2] !== '8' ||
+        parts[3] !== '1'
+    ) {
+        return null;
+    }
+
     try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            const conf = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-            if (conf.adminUsername) username = conf.adminUsername;
-            if (conf.adminPassword) password = conf.adminPassword;
-        }
-    } catch (e) {}
-    return { username, password };
+        const salt = Buffer.from(parts[4], 'base64url');
+        const hash = Buffer.from(parts[5], 'base64url');
+        if (salt.length !== 16 || hash.length !== 32) return null;
+        return { salt, hash };
+    } catch (e) {
+        return null;
+    }
+}
+
+function verifyAdminPassword(password, passwordHash) {
+    const parsedHash = parsePasswordHash(passwordHash);
+    if (!parsedHash) return false;
+    const derivedHash = crypto.scryptSync(password, parsedHash.salt, 32, {
+        N: 16384,
+        r: 8,
+        p: 1,
+        maxmem: 64 * 1024 * 1024,
+    });
+    return crypto.timingSafeEqual(derivedHash, parsedHash.hash);
 }
 
 function generateSignedToken(username) {
+    if (Buffer.byteLength(AUTH_SECRET, 'utf8') < 32) {
+        throw new Error('Authentication signing secret is not configured.');
+    }
     const issuedAt = Date.now();
-    const expiresAt = issuedAt + (14 * 24 * 60 * 60 * 1000); // 14 days valid
+    const expiresAt = issuedAt + (8 * 60 * 60 * 1000);
     const payload = `${username}:${issuedAt}:${expiresAt}`;
     const hmac = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
     const token = Buffer.from(`${payload}:${hmac}`).toString('base64url');
@@ -200,13 +231,23 @@ function generateSignedToken(username) {
 }
 
 function verifySignedToken(token) {
-    if (!token || typeof token !== 'string') return null;
+    const credentials = getAdminCredentials();
+    if (!credentials || !token || typeof token !== 'string') return null;
     try {
         const decoded = Buffer.from(token, 'base64url').toString('utf8');
         const parts = decoded.split(':');
         if (parts.length !== 4) return null;
         const [username, issuedAt, expiresAt, receivedHmac] = parts;
-        if (Date.now() > parseInt(expiresAt, 10)) {
+        const issuedAtMs = Number(issuedAt);
+        const expiresAtMs = Number(expiresAt);
+        if (
+            username !== credentials.username ||
+            !Number.isSafeInteger(issuedAtMs) ||
+            !Number.isSafeInteger(expiresAtMs) ||
+            issuedAtMs > Date.now() + 60_000 ||
+            expiresAtMs <= Date.now() ||
+            expiresAtMs - issuedAtMs > 8 * 60 * 60 * 1000
+        ) {
             return null; // Expired
         }
         const expectedPayload = `${username}:${issuedAt}:${expiresAt}`;
@@ -214,14 +255,14 @@ function verifySignedToken(token) {
         const bufA = Buffer.from(receivedHmac, 'hex');
         const bufB = Buffer.from(calculatedHmac, 'hex');
         if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
-            return { username, expiresAt: parseInt(expiresAt, 10) };
+            return { username, expiresAt: expiresAtMs };
         }
     } catch (e) {}
     return null;
 }
 
-function requireStaffAuth(req, res, next) {
-    const authHeader = req.headers['authorization'] || req.headers['x-staff-token'] || '';
+function requireAdminAuth(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['x-admin-token'] || '';
     let token = '';
     if (authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7).trim();
@@ -233,10 +274,10 @@ function requireStaffAuth(req, res, next) {
     if (!session) {
         return res.status(401).json({
             success: false,
-            error: 'Unauthorized: Workshop staff authentication required to access client records.'
+            error: 'Unauthorized: Admin authentication required to access client records.'
         });
     }
-    req.staffUser = session;
+    req.adminUser = session;
     next();
 }
 
@@ -244,35 +285,53 @@ function requireStaffAuth(req, res, next) {
 // AUTHENTICATION & SECURITY ENDPOINTS
 // --------------------------------------------------------------------------
 
-// 1. Staff Sign In (Strict Credential Verification)
-app.post(['/api/auth/login', '/auth/login'], (req, res) => {
+// 1. Admin Sign In (Strict Credential Verification)
+app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
     const { username, password } = req.body || {};
     const creds = getAdminCredentials();
 
-    if (
-        username && password &&
-        username.trim().toLowerCase() === creds.username.toLowerCase() &&
-        password.trim() === creds.password
-    ) {
-        const tokenData = generateSignedToken(creds.username);
-        return res.json({
-            success: true,
-            token: tokenData.token,
-            expiresAt: tokenData.expiresAt,
-            user: creds.username,
-            role: 'admin'
+    if (!creds) {
+        return res.status(503).json({
+            success: false,
+            error: 'Admin authentication is not configured.'
         });
+    }
+    if (
+        typeof username === 'string' &&
+        username.length <= 128 &&
+        typeof password === 'string' &&
+        password.length > 0 &&
+        password.length <= 1024
+    ) {
+        try {
+            if (username.trim() === creds.username && verifyAdminPassword(password, creds.passwordHash)) {
+                const tokenData = generateSignedToken(creds.username);
+                return res.json({
+                    success: true,
+                    token: tokenData.token,
+                    expiresAt: tokenData.expiresAt,
+                    user: creds.username,
+                    role: 'admin'
+                });
+            }
+        } catch (e) {
+            console.error('Admin sign-in verification failed:', e.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Unable to sign in right now.'
+            });
+        }
     }
 
     return res.status(401).json({
         success: false,
-        error: 'Invalid staff username or password. Access denied.'
+        error: 'Invalid admin username or password. Access denied.'
     });
 });
 
 // 2. Verify Session Validity
 app.get(['/api/auth/verify', '/auth/verify'], (req, res) => {
-    const authHeader = req.headers['authorization'] || req.headers['x-staff-token'] || '';
+    const authHeader = req.headers['authorization'] || req.headers['x-admin-token'] || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
     const session = verifySignedToken(token);
     if (session) {
@@ -281,32 +340,15 @@ app.get(['/api/auth/verify', '/auth/verify'], (req, res) => {
     return res.status(401).json({ success: false, valid: false, error: 'Session expired or invalid.' });
 });
 
-// 3. Change Staff Password (Protected with Active Staff Token)
-app.post(['/api/auth/change-password', '/auth/change-password'], requireStaffAuth, (req, res) => {
-    const { currentPassword, newPassword } = req.body || {};
-    const creds = getAdminCredentials();
-
-    if (!currentPassword || currentPassword !== creds.password) {
-        return res.status(400).json({ success: false, error: 'Current password is incorrect.' });
-    }
-    if (!newPassword || newPassword.length < 4) {
-        return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long.' });
-    }
-
-    try {
-        let conf = {};
-        if (fs.existsSync(CONFIG_FILE)) {
-            conf = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-        }
-        conf.adminPassword = newPassword;
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(conf, null, 2), 'utf8');
-        return res.json({ success: true, message: 'Password updated successfully.' });
-    } catch (e) {
-        return res.status(500).json({ success: false, error: 'Failed to update config file: ' + e.message });
-    }
+// 3. Change Admin Password (Managed through deployment secrets)
+app.post(['/api/auth/change-password', '/auth/change-password'], requireAdminAuth, (req, res) => {
+    return res.status(501).json({
+        success: false,
+        error: 'Admin credentials are managed through deployment secrets.'
+    });
 });
 
-// 4. Staff Sign Out
+// 4. Admin Sign Out
 app.post(['/api/auth/logout', '/auth/logout'], (req, res) => {
     res.json({ success: true, message: 'Logged out successfully.' });
 });
@@ -368,13 +410,13 @@ app.get(['/api/public/track', '/public/track'], (req, res) => {
     });
 });
 
-// REST API Endpoints (Protected with requireStaffAuth)
-app.get(['/api/jobcards', '/jobcards'], requireStaffAuth, (req, res) => {
+// REST API Endpoints (Protected with requireAdminAuth)
+app.get(['/api/jobcards', '/jobcards'], requireAdminAuth, (req, res) => {
     const cards = readJobCards();
     res.json({ success: true, data: cards });
 });
 
-app.get(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) => {
+app.get(['/api/jobcards/:id', '/jobcards/:id'], requireAdminAuth, (req, res) => {
     const cards = readJobCards();
     const found = cards.find(c => c.id.toLowerCase() === req.params.id.toLowerCase());
     if (found) {
@@ -385,7 +427,7 @@ app.get(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) => 
 });
 
 // Create or Update Job Card via POST (Protected)
-app.post(['/api/jobcards', '/jobcards'], requireStaffAuth, (req, res) => {
+app.post(['/api/jobcards', '/jobcards'], requireAdminAuth, (req, res) => {
     const newCard = req.body;
     if (!newCard || !newCard.id) {
         return res.status(400).json({ success: false, message: 'Valid job card object required' });
@@ -417,7 +459,7 @@ app.post(['/api/jobcards', '/jobcards'], requireStaffAuth, (req, res) => {
 });
 
 // Update Job Card via PUT (Protected)
-app.put(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) => {
+app.put(['/api/jobcards/:id', '/jobcards/:id'], requireAdminAuth, (req, res) => {
     const updated = req.body;
     const cards = readJobCards();
     const idx = cards.findIndex(c => c.id.toLowerCase() === req.params.id.toLowerCase());
@@ -444,7 +486,7 @@ app.put(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) => 
     res.json({ success: true, data: cards[idx >= 0 ? idx : 0] });
 });
 
-app.put(['/api/jobcards/:id/bay', '/jobcards/:id/bay'], requireStaffAuth, (req, res) => {
+app.put(['/api/jobcards/:id/bay', '/jobcards/:id/bay'], requireAdminAuth, (req, res) => {
     const { bay, status } = req.body;
     const cards = readJobCards();
     const idx = cards.findIndex(c => c.id.toLowerCase() === req.params.id.toLowerCase());
@@ -477,7 +519,7 @@ app.put(['/api/jobcards/:id/bay', '/jobcards/:id/bay'], requireStaffAuth, (req, 
     res.json({ success: true, data: cards[idx] });
 });
 
-app.delete(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) => {
+app.delete(['/api/jobcards/:id', '/jobcards/:id'], requireAdminAuth, (req, res) => {
     let cards = readJobCards();
     const initialLen = cards.length;
     cards = cards.filter(c => c.id.toLowerCase() !== req.params.id.toLowerCase());
@@ -494,7 +536,7 @@ app.delete(['/api/jobcards/:id', '/jobcards/:id'], requireStaffAuth, (req, res) 
 // GEMINI AI AUTOMOTIVE DIAGNOSTIC ENGINE (SERVER-SIDE PROXY)
 // Accurately interprets English, Urdu, and Roman Urdu mechanical concerns
 // ==========================================================================
-app.post(['/api/ai/diagnose', '/ai/diagnose'], requireStaffAuth, (req, res) => {
+app.post(['/api/ai/diagnose', '/ai/diagnose'], requireAdminAuth, (req, res) => {
     const { concern, makeModel, mileage, apiKey: clientApiKey } = req.body;
     const apiKey = clientApiKey || getGeminiApiKey();
 
@@ -786,7 +828,7 @@ function generateAdvancedAutomotiveDiagnosis(concern, makeModel) {
 }
 
 // Trigger voice announcement (Protected)
-app.post(['/api/tv/announce', '/tv/announce'], requireStaffAuth, (req, res) => {
+app.post(['/api/tv/announce', '/tv/announce'], requireAdminAuth, (req, res) => {
     const { plateNo, makeModel, message } = req.body;
     broadcastEvent('voice_announce', {
         plateNo: plateNo || 'Test Vehicle',
@@ -836,7 +878,7 @@ if (require.main === module) {
         try {
             wssInstance = new WebSocket.Server({ server, path: '/ws' });
             wssInstance.on('connection', (ws) => {
-                ws.isStaffAuthenticated = false;
+                ws.isAdminAuthenticated = false;
                 ws.send(JSON.stringify({ type: 'connected', timestamp: Date.now() }));
 
                 ws.on('message', (msgStr) => {
@@ -845,7 +887,7 @@ if (require.main === module) {
                         if (parsed.type === 'auth' && parsed.token) {
                             const session = verifySignedToken(parsed.token);
                             if (session) {
-                                ws.isStaffAuthenticated = true;
+                                ws.isAdminAuthenticated = true;
                                 const cards = readJobCards();
                                 ws.send(JSON.stringify({ type: 'snapshot', data: cards, timestamp: Date.now() }));
                             }
@@ -862,7 +904,7 @@ if (require.main === module) {
         console.log(`===================================================================`);
         console.log(`🚗 Al Shaheen Auto Hub - Modern Node.js Enterprise Application`);
         console.log(`===================================================================`);
-        console.log(`📡 Workshop Staff Portal: http://localhost:${PORT}/workshop`);
+        console.log(`📡 Workshop Admin Portal: http://localhost:${PORT}/workshop`);
         console.log(`📺 60" Lounge TV Display:  http://localhost:${PORT}/tv`);
         console.log(`📱 Customer Mobile Track:  http://localhost:${PORT}/track`);
         console.log(`⚡ REST API & SSE Live:    http://localhost:${PORT}/api/live-stream`);

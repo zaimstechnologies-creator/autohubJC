@@ -3,8 +3,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { JobCard } from '@/types';
 
+type AnnouncementJobCard = Pick<
+  JobCard,
+  'id' | 'bay_category' | 'bay_number' | 'plate_number' | 'make_model'
+>;
+
 interface LoungeAudioEngineProps {
-  queue: JobCard[];
+  queue: AnnouncementJobCard[];
   onAnnouncementComplete?: (cardId: string) => void;
   playerRef: React.MutableRefObject<any>;
 }

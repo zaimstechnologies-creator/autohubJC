@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
+import AuthSessionButton from '@/components/AuthSessionButton';
 
 export default function CustomerTrackPage() {
   const [plateInput, setPlateInput] = useState('');
@@ -77,7 +78,7 @@ export default function CustomerTrackPage() {
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans pb-16">
       {/* Mobile Top Header */}
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-4 py-3 sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <div className="bg-white p-0.5 rounded-lg shadow border border-slate-700/50 flex items-center justify-center">
             <img
@@ -94,15 +95,18 @@ export default function CustomerTrackPage() {
           </div>
         </div>
 
-        <a
-          href="https://wa.me/923441411123"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-2.5 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition hover:bg-emerald-600 hover:text-white"
-        >
-          <MessageCircle className="w-3.5 h-3.5" />
-          <span>Advisor</span>
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://wa.me/923441411123"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition hover:bg-emerald-600 hover:text-white"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Advisor</span>
+          </a>
+          <AuthSessionButton />
+        </div>
       </header>
 
       {/* Main Container */}
