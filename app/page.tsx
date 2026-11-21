@@ -53,7 +53,7 @@ export default function HomePage() {
             Precision Workshop, AI Diagnostics & Lounge Broadcast
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Integrated workshop orchestration across 12 bays, bilingual Urdu/English speech-to-text intake, Gemini 2.5 structured mechanical diagnostics, and automated 60" lounge TV audio ducking.
+            Integrated workshop orchestration across 12 bays, bilingual Urdu/English speech-to-text intake, free-tier Gemini structured mechanical diagnostics, and automated 60" lounge TV audio ducking.
           </p>
         </div>
 
@@ -152,7 +152,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2.5 text-slate-300">
             <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-            <span>Gemini 2.5 Flash Diagnostics</span>
+            <span>AI Diagnostics</span>
           </div>
           <div className="flex items-center gap-2.5 text-slate-300">
             <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />

@@ -1,17 +1,27 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { GoogleGenAI } from '@google/genai';
 import { AIDiagnosisResult } from '@/types';
+import { formatNumberedPoints } from '@/lib/diagnosisFormatting';
+
+const FREE_DIAGNOSTIC_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash',
+  'gemini-4-hydrogen',
+];
+
+const DIAGNOSIS_TIMEOUT_MS = 40_000;
 
 export const DIAGNOSTIC_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
     roman_urdu_explanation: {
       type: 'string',
-      description: 'Comprehensive, highly detailed customer-facing explanation in clear Roman Urdu (colloquial Urdu in English alphabet as spoken in Pakistan). Break down each symptom point-by-point: 1. Masla kya hai, 2. Root cause (wajah), 3. Risk if delayed (kya bara nuqsaan hoga), 4. Recommended repair solution (Al Shaheen Auto Hub isay kaise hal kare gi). Use polite, professional, and clear tone.',
+      description: 'A concise numbered list in natural Roman Urdu, one point per reported issue. Use 1-2 short sentences per point to state the issue, likely cause, and recommended check or repair.',
     },
     plain_english_explanation: {
       type: 'string',
-      description: 'Detailed, non-technical explanation in English breaking down each vehicle fault for advisors and customers.',
+      description: 'A concise numbered list in clear, non-technical English, one point per reported issue. Use 1-2 short sentences per point to state the issue, likely cause, and recommended check or repair.',
     },
     mechanical_root_cause: {
       type: 'string',
@@ -24,7 +34,7 @@ export const DIAGNOSTIC_RESPONSE_SCHEMA = {
     },
     work_to_be_done: {
       type: 'string',
-      description: 'Numbered, detailed step-by-step master technician instructions for the repair scope in Roman Urdu and English.',
+      description: 'Provide 3 to 5 concise, numbered repair steps, each on its own line. Include only inspections and repairs relevant to the reported symptoms.',
     },
     suggested_parts: {
       type: 'array',
@@ -57,14 +67,9 @@ You specialize in Japanese (Toyota, Honda, Suzuki, Nissan), European (Audi, BMW,
 The workshop advisor and customer communicate primarily in Urdu and Roman Urdu.
 
 CRITICAL INSTRUCTIONS:
-1. Provide "roman_urdu_explanation" as a THOROUGH, POINT-BY-POINT detailed explanation in polite, natural Roman Urdu (Urdu written in English script).
-For each issue mentioned by the customer, provide:
-- Header: e.g. "1. Transmission / Gearbox ka 3rd Gear Phansna:"
-- Masla aur Wajah (What the fault is and mechanical cause)
-- Agar theek na karwaya jaye tu nuqsaan (Risk if left unaddressed)
-- Al Shaheen ka Solution (Exact repair method)
+1. Write "roman_urdu_explanation" and "plain_english_explanation" as concise numbered lists, one point per reported issue, with a maximum of five points. Keep each point to 1-2 short sentences stating the issue, likely cause, and recommended check or repair. Use natural, polite Roman Urdu for the Roman Urdu field and simple English for the English field. Put each point on its own line. Do not invent extra issues, repeat details, or add lengthy risk explanations.
 
-2. Provide "work_to_be_done" as comprehensive, sequenced master technician repair steps in Roman Urdu and English with precise inspection instructions.
+2. Provide "work_to_be_done" as 3 to 5 concise, numbered repair steps in Roman Urdu and English. Put each step on its own line. Make every step actionable and directly relevant to the customer's reported symptoms. Include only necessary diagnosis, repair, and verification; do not add unrelated maintenance, assumptions, or nested lists.
 
 3. Select all applicable workshop departments from: Mechanical, Electrical, AC Service, Suspension, Brakes, Alignment, Balancing, Denting, Painting, Car Wash, Detailing, Tyres Works, Inspection, General Service.
 
@@ -82,47 +87,74 @@ export async function runAIDiagnosis(params: {
   const apiKey = params.apiKeyOverride || process.env.GEMINI_API_KEY || '';
 
   if (apiKey) {
-    const candidateModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        timeout: 12_000,
+        retryOptions: { attempts: 1 },
+      },
+    });
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), DIAGNOSIS_TIMEOUT_MS);
 
-    for (const model of candidateModels) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
+    try {
+      for (const model of FREE_DIAGNOSTIC_MODELS) {
+        if (abortController.signal.aborted) break;
+
         const prompt = `Vehicle Make & Model: ${params.make_model || 'Unknown Vehicle'}
 Variant / Trim: ${params.variant || 'Standard'}
 Odometer Mileage: ${params.mileage_km || 0} KM
 Customer Reported Fault / Concern (Urdu / Roman Urdu / English):
 "${params.customer_concern}"
 
-Diagnose this automotive issue with high detail in Roman Urdu and English, recommend repair departments, provide technician repair steps, and estimate parts and consumables in PKR.`;
+Diagnose only the reported concerns. Write "roman_urdu_explanation" and "plain_english_explanation" as concise numbered points, one per reported issue and no more than five, with 1-2 short sentences per point. Put each point on its own line and include the likely cause and recommended check or repair. Write "work_to_be_done" as 3 to 5 short, actionable numbered points, one point per line, covering necessary inspection, repair, and final verification. Do not add unrelated work, unsupported assumptions, or long explanations. Recommend relevant departments and estimate only necessary parts and consumables in PKR.`;
 
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-            responseMimeType: 'application/json',
-            responseSchema: DIAGNOSTIC_RESPONSE_SCHEMA as any,
-            temperature: 0.2,
-          },
-        });
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              abortSignal: abortController.signal,
+              systemInstruction: SYSTEM_INSTRUCTION,
+              responseMimeType: 'application/json',
+              responseSchema: DIAGNOSTIC_RESPONSE_SCHEMA as any,
+              temperature: 0.2,
+              maxOutputTokens: 4096,
+            },
+          });
 
-        let responseText = response.text?.trim() || '';
-        if (responseText) {
-          if (responseText.startsWith('```')) {
-            responseText = responseText.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+          let responseText = response.text?.trim() || '';
+          if (responseText) {
+            if (responseText.startsWith('```')) {
+              responseText = responseText.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+            const parsed = JSON.parse(responseText) as AIDiagnosisResult;
+            console.log(`[Gemini Diagnosis Success with ${model}]`);
+            return formatDiagnosisSteps(parsed);
           }
-          const parsed = JSON.parse(responseText);
-          console.log(`[Gemini Diagnosis Success with ${model}]`);
-          return parsed as AIDiagnosisResult;
+          console.warn(`Gemini diagnostic returned an empty response with model ${model}`);
+        } catch (err: any) {
+          if (!abortController.signal.aborted) {
+            console.warn(`Gemini diagnostic call error with model ${model}:`, err?.message || err);
+          }
         }
-      } catch (err: any) {
-        console.warn(`Gemini diagnostic call error with model ${model}:`, err?.message || err);
       }
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
   // Domain-smart realistic fallback if all models or network fail
-  return generateDomainFallbackDiagnosis(params);
+  return formatDiagnosisSteps(generateDomainFallbackDiagnosis(params));
+}
+
+function formatDiagnosisSteps(diagnosis: AIDiagnosisResult): AIDiagnosisResult {
+  return {
+    ...diagnosis,
+    roman_urdu_explanation: formatNumberedPoints(diagnosis.roman_urdu_explanation || ''),
+    plain_english_explanation: formatNumberedPoints(diagnosis.plain_english_explanation || ''),
+    work_to_be_done: formatNumberedPoints(diagnosis.work_to_be_done || ''),
+  };
 }
 
 function generateDomainFallbackDiagnosis(params: {

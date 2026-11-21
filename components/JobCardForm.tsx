@@ -11,6 +11,7 @@ import {
   AIDiagnosisResult,
 } from '@/types';
 import CarBlueprint from './CarBlueprint';
+import { formatNumberedPoints } from '@/lib/diagnosisFormatting';
 import {
   Mic,
   MicOff,
@@ -34,7 +35,7 @@ import Link from 'next/link';
 interface JobCardFormProps {
   initialData?: JobCard | null;
   onSaveSuccess?: (saved: JobCard) => void;
-  onPrint?: () => void;
+  onPrint?: (card: JobCard) => void;
 }
 
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
@@ -337,7 +338,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
   };
 
   // Save handler
-  const handleSave = async (customStatus?: JobCard['status']) => {
+  const handleSave = async (customStatus?: JobCard['status'], printAfterSave = false) => {
     if (!formData.customer_name || !formData.plate_number) {
       alert('Please fill in at least Customer Name and Vehicle Plate Number.');
       return;
@@ -364,7 +365,11 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
 
       setFormData(json.data);
       setSaveStatus('Job Card saved successfully!');
-      if (onSaveSuccess) onSaveSuccess(json.data);
+      if (printAfterSave) {
+        if (onPrint) onPrint(json.data);
+      } else if (onSaveSuccess) {
+        onSaveSuccess(json.data);
+      }
       setTimeout(() => setSaveStatus(null), 3500);
     } catch (err: any) {
       alert(`Error saving job card: ${err.message}`);
@@ -417,7 +422,17 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
 
           <button
             type="button"
-            onClick={onPrint || (() => window.print())}
+            onClick={() => {
+              if (onPrint) {
+                if (initialData?.id) {
+                  onPrint(formData);
+                } else {
+                  handleSave(undefined, true);
+                }
+              } else {
+                alert('Please save the job card before printing.');
+              }
+            }}
             className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition shadow"
           >
             <Printer className="w-4 h-4 text-sky-400" />
@@ -509,7 +524,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             </div>
 
             <div className="text-xs sm:text-sm text-slate-100 leading-relaxed font-sans whitespace-pre-wrap bg-slate-950/50 p-3 rounded-xl border border-indigo-900/40">
-              {aiBanner}
+              {formatNumberedPoints(aiBanner)}
             </div>
           </div>
         </div>
@@ -931,7 +946,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-600 hover:from-purple-500 hover:to-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-purple-950/50 disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              {aiLoading ? 'Analyzing Vehicle Symptoms with Gemini 2.5...' : '✨ Run AI Diagnosis & Auto-Fill Job Card'}
+              {aiLoading ? 'Analyzing Vehicle Symptoms with Gemini...' : '✨ Run AI Diagnosis & Auto-Fill Job Card'}
             </button>
           </div>
 
@@ -948,7 +963,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               rows={8}
               value={formData.work_to_be_done || ''}
               onChange={(e) => setFormData({ ...formData, work_to_be_done: e.target.value })}
-              placeholder="1. Hoist vehicle and inspect bushings...\n2. Check brake rotor runout...\n3. Road test and verify..."
+              placeholder="1. Inspect and confirm the reported faults.\n2. Complete the necessary repairs.\n3. Test the repairs and verify the results."
               className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500 font-mono leading-relaxed"
             />
           </div>

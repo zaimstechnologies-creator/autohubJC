@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { JobCard } from '@/types';
 import JobCardForm from '@/components/JobCardForm';
 import PrintJobCardA4 from '@/components/PrintJobCardA4';
@@ -11,11 +11,19 @@ import Link from 'next/link';
 export default function JobCardDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params?.id as string;
 
   const [card, setCard] = useState<JobCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPrintMode, setIsPrintMode] = useState(false);
+  const autoPrintJobId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const handleAfterPrint = () => setIsPrintMode(false);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -26,6 +34,11 @@ export default function JobCardDetailPage() {
         if (res.ok) {
           const json = await res.json();
           setCard(json.data);
+          if (searchParams.get('print') === '1' && autoPrintJobId.current !== id) {
+            autoPrintJobId.current = id;
+            setIsPrintMode(true);
+            setTimeout(() => printAfterRender(), 500);
+          }
         }
       } catch (err) {
         console.error('Error fetching job card:', err);
@@ -39,9 +52,7 @@ export default function JobCardDetailPage() {
 
   const handlePrint = () => {
     setIsPrintMode(true);
-    setTimeout(() => {
-      window.print();
-    }, 300);
+    setTimeout(() => printAfterRender(), 300);
   };
 
   if (loading) {
@@ -53,6 +64,14 @@ export default function JobCardDetailPage() {
         </div>
       </div>
     );
+  }
+
+  function printAfterRender() {
+    void document.fonts.ready.then(() => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => window.print());
+      });
+    });
   }
 
   if (!card) {
@@ -112,9 +131,9 @@ export default function JobCardDetailPage() {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 print-page-stage">
         {isPrintMode ? (
-          <div className="bg-white rounded-2xl p-4 shadow-2xl max-w-[210mm] mx-auto print:p-0 print:shadow-none print:max-w-none">
+          <div className="print-page-frame bg-white shadow-2xl mx-auto print:shadow-none">
             <PrintJobCardA4 card={card} />
           </div>
         ) : (
