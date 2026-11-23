@@ -221,7 +221,7 @@ export default function LoginPage() {
                 placeholder="Enter your 12-character password"
                 className={`h-12 w-full rounded-[10px] border px-4 pr-12 text-[14px] outline-none transition placeholder:text-slate-400 ${
                   passwordInvalid
-                    ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-600/20'
+                    ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-600/20'
                     : 'border-slate-300 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20'
                 }`}
               />
