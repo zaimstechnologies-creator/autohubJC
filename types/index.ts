@@ -40,6 +40,7 @@ export interface QualityChecks {
 }
 
 export interface AIDiagnosisResult {
+  response_language: 'roman_urdu' | 'english';
   plain_english_explanation: string;
   roman_urdu_explanation?: string;
   mechanical_root_cause: string;

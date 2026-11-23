@@ -7,7 +7,7 @@ A comprehensive, screen-responsive workshop management application built for **A
 ## 🌟 Key Capabilities & New Features
 
 ### 1. 📺 Waiting Lounge TV Display (Hospital-Style Queue Radar)
-- **URL Route**: `/tv` (sign-in required)
+- **URL Route**: `/tv` (public lounge display; no sign-in required)
 - **Split-Screen Design for Smart TVs (55"+ 1080p / 4K)**:
   - **Left Side (62%) — Live Bay Radar & Queue Board**:
     - High-contrast, large-font display readable across the waiting lounge.
@@ -25,7 +25,7 @@ A comprehensive, screen-responsive workshop management application built for **A
     - Embedded video player that continuously plays your official YouTube channel videos and Shorts to keep waiting customers entertained.
     - Sound toggle (`🔊 Sound ON` / `🔇 Muted`), Next Video button, and YouTube Setup modal.
   - **Bottom Ticker**: Running marquee announcement with lounge Wi-Fi password, complimentary tea/coffee reminders, and workshop helpline.
-  - **TV Remote / Kiosk**: The lounge display is available after signing in to the application.
+  - **TV Remote / Kiosk**: Open the lounge display directly without signing in. The public queue feed omits registration plates and job-card identifiers.
 
 ### 2. 📱 Vehicle Tracking
 - **URL Route**: `/track` (sign-in required)
@@ -41,8 +41,8 @@ A comprehensive, screen-responsive workshop management application built for **A
   - One-click **Download / View Job Card A4 PDF** button.
 
 ### 3. 🔒 Application Login
-- Every application page and API requires a server-verified session; only login/logout endpoints and static assets are unauthenticated.
-- After signing in, the dashboard, tracking, and lounge TV are available in the same authenticated session.
+- Workshop management and customer vehicle tracking require a server-verified session. The home page and lounge TV are public; only the TV queue endpoint is also public, and it omits registration plates and job-card identifiers.
+- After signing in, workshop management and tracking are available in the same authenticated session.
 - Credentials are configured using server-only environment variables; no default username or password is shipped.
 
 ### 4. ⚡ Real-Time Cross-Screen Sync
@@ -50,6 +50,7 @@ A comprehensive, screen-responsive workshop management application built for **A
 
 ### 5. 🤖 Gemini AI Diagnostics & Tablet Stylus Job Cards
 - Built-in Google Gemini AI automotive diagnosis engine (Free Tier compatible).
+- AI repair instructions follow the concern's language: Roman Urdu/Hinglish or English. Advisors can switch the explanation between Roman Urdu and English.
 - Vector car inspection schematic with tire tread depth ($mm$) and touch damage markings (Dent, Scratch, Chips, Rust).
 - Stylus signature pads for Customer Approval and Service Incharge.
 - A4 printable layout and high-definition PDF generator.

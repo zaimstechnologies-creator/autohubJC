@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Car,
 } from 'lucide-react';
-import AuthSessionButton from '@/components/AuthSessionButton';
 
 export default function HomePage() {
   return (
@@ -40,7 +39,12 @@ export default function HomePage() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             12 Bays Online
           </span>
-          <AuthSessionButton />
+          <Link
+            href="/login"
+            className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 transition hover:border-amber-400/40 hover:bg-slate-800 hover:text-amber-200"
+          >
+            Staff Sign In
+          </Link>
         </div>
       </header>
 

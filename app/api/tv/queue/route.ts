@@ -6,8 +6,6 @@ import type { JobCard } from '@/types';
 type LoungeJobCard = Pick<
   JobCard,
   | 'id'
-  | 'job_card_number'
-  | 'plate_number'
   | 'make_model'
   | 'variant'
   | 'bay_category'
@@ -20,17 +18,19 @@ type LoungeJobCard = Pick<
 export const dynamic = 'force-dynamic';
 
 function toLoungeCard(card: Partial<JobCard>): LoungeJobCard {
+  const bayCategory = card.bay_category === 'CAR_WASH' ? 'CAR_WASH' : 'WORKSHOP';
+  const bayNumber = Number(card.bay_number || 1);
+  const updatedAt = String(card.updated_at || 'unknown');
+
   return {
-    id: String(card.id || card.job_card_number || ''),
-    job_card_number: String(card.job_card_number || card.id || ''),
-    plate_number: String(card.plate_number || ''),
+    id: `${bayCategory}-${bayNumber}-${updatedAt}`,
     make_model: String(card.make_model || 'Vehicle'),
     variant: String(card.variant || ''),
-    bay_category: card.bay_category === 'CAR_WASH' ? 'CAR_WASH' : 'WORKSHOP',
-    bay_number: Number(card.bay_number || 1),
+    bay_category: bayCategory,
+    bay_number: bayNumber,
     status: card.status || 'IN_PROGRESS',
     departments: Array.isArray(card.departments) ? card.departments.slice(0, 2) : [],
-    updated_at: String(card.updated_at || new Date().toISOString()),
+    updated_at: updatedAt,
   };
 }
 
@@ -39,7 +39,7 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from('job_cards')
       .select(
-        'id, job_card_number, plate_number, make_model, variant, bay_category, bay_number, status, departments, updated_at'
+        'make_model, variant, bay_category, bay_number, status, departments, updated_at'
       )
       .neq('status', 'CLOSED_PAID')
       .order('updated_at', { ascending: false });

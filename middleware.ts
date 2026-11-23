@@ -10,7 +10,11 @@ export async function middleware(request: NextRequest) {
         pathname
       ));
   const isPublicRoute =
+    pathname === '/' ||
+    pathname === '/tv' ||
+    pathname === '/tv/' ||
     pathname === '/login' ||
+    pathname === '/api/tv/queue' ||
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     isStaticAsset;

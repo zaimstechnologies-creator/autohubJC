@@ -5,7 +5,7 @@ import { JobCard } from '@/types';
 
 type AnnouncementJobCard = Pick<
   JobCard,
-  'id' | 'bay_category' | 'bay_number' | 'plate_number' | 'make_model'
+  'id' | 'bay_category' | 'bay_number' | 'make_model'
 >;
 
 interface LoungeAudioEngineProps {
@@ -61,15 +61,6 @@ export function playWebAudioChime(): Promise<void> {
   });
 }
 
-export function formatPlateForSpeech(plate: string): string {
-  if (!plate) return '';
-  // Convert "LEA 20 7860" or "AQP007" to spaced individual letters and numbers: "L E A , 2 0 , 7 8 6 0"
-  return plate
-    .split('')
-    .map((char) => (char === ' ' ? ' , ' : `${char} `))
-    .join('');
-}
-
 export default function LoungeAudioEngine({
   queue,
   onAnnouncementComplete,
@@ -88,11 +79,10 @@ export default function LoungeAudioEngine({
     const nextCard = queue[0];
     const isWash = nextCard.bay_category === 'CAR_WASH';
     const bayTitle = isWash ? `Car Wash Bay ${nextCard.bay_number}` : `Workshop Bay ${nextCard.bay_number}`;
-    const spacedPlate = formatPlateForSpeech(nextCard.plate_number);
-    const speechMessage = `Attention please. Vehicle number ${spacedPlate}, ${nextCard.make_model}, at ${bayTitle}, is now ready for delivery.`;
+    const speechMessage = `Attention please. The ${nextCard.make_model || 'vehicle'} at ${bayTitle} is now ready for delivery.`;
 
     setCurrentAnnouncementText(
-      `Announcing: ${nextCard.plate_number} (${nextCard.make_model}) - ${bayTitle}`
+      `Announcing: ${nextCard.make_model || 'Vehicle'} - ${bayTitle}`
     );
 
     // 1. Duck YouTube volume to 10%

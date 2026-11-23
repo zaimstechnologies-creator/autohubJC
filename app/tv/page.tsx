@@ -2,27 +2,23 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
-import LoungeAudioEngine, { playWebAudioChime, formatPlateForSpeech } from '@/components/LoungeAudioEngine';
-import AuthSessionButton from '@/components/AuthSessionButton';
+import LoungeAudioEngine, { playWebAudioChime } from '@/components/LoungeAudioEngine';
 import {
   Volume2,
   VolumeX,
   Maximize2,
   Minimize2,
   Radio,
+  Activity,
   CheckCircle2,
   Clock,
-  Tv,
   Car,
-  Sparkles,
   Volume1,
 } from 'lucide-react';
 
 type LoungeJobCard = Pick<
   JobCard,
   | 'id'
-  | 'job_card_number'
-  | 'plate_number'
   | 'make_model'
   | 'variant'
   | 'bay_category'
@@ -50,6 +46,7 @@ export default function LoungeTVPage() {
   const [currentDate, setCurrentDate] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+  const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
 
   const playerRef = useRef<any>(null);
   const initialLoadDone = useRef(false);
@@ -81,36 +78,46 @@ export default function LoungeTVPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const updateFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreenState);
+  }, []);
+
   // Fetch job cards
   const fetchCards = async () => {
     try {
       const res = await fetch('/api/tv/queue', { cache: 'no-store' });
-      if (res.ok) {
-        const json = await res.json();
-        const cards: LoungeJobCard[] = json.data || [];
-        setJobCards(cards);
+      if (!res.ok) throw new Error(`Queue request failed (${res.status}).`);
 
-        // Detect newly ready vehicles for announcement queue
-        const readyVehicles = cards.filter((c) => c.status === 'READY_FOR_DELIVERY');
+      const json = await res.json();
+      if (!Array.isArray(json.data)) throw new Error('Queue response was invalid.');
 
-        if (initialLoadDone.current) {
-          readyVehicles.forEach((c) => {
-            if (!announcedCardIds.has(c.id)) {
-              setAnnouncementQueue((prev) => {
-                if (prev.some((item) => item.id === c.id)) return prev;
-                return [...prev, c];
-              });
-            }
-          });
-        } else {
-          // On first load, mark existing ready vehicles as already notified
-          const existingIds = new Set(readyVehicles.map((c) => c.id));
-          setAnnouncedCardIds(existingIds);
-          initialLoadDone.current = true;
-        }
+      const cards: LoungeJobCard[] = json.data;
+      setJobCards(cards);
+      setQueueStatus('live');
+
+      // Detect newly ready vehicles for announcement queue
+      const readyVehicles = cards.filter((c) => c.status === 'READY_FOR_DELIVERY');
+
+      if (initialLoadDone.current) {
+        readyVehicles.forEach((c) => {
+          if (!announcedCardIds.has(c.id)) {
+            setAnnouncementQueue((prev) => {
+              if (prev.some((item) => item.id === c.id)) return prev;
+              return [...prev, c];
+            });
+          }
+        });
+      } else {
+        // On first load, mark existing ready vehicles as already notified
+        const existingIds = new Set(readyVehicles.map((c) => c.id));
+        setAnnouncedCardIds(existingIds);
+        initialLoadDone.current = true;
       }
     } catch (err) {
       console.error('TV queue fetch error:', err);
+      setQueueStatus('error');
     }
   };
 
@@ -309,35 +316,32 @@ export default function LoungeTVPage() {
       });
   }, [jobCards]);
 
+  const readyCount = displayQueue.filter((card) => card.status === 'READY_FOR_DELIVERY').length;
+  const inProgressCount = displayQueue.filter((card) => card.status === 'IN_PROGRESS').length;
+
   return (
-    <div className="w-screen h-screen overflow-hidden bg-[#0B1221] text-white flex flex-col font-sans select-none">
-      {/* 60" Lounge Header Bar */}
-      <header className="h-16 px-6 bg-[#070d18] border-b border-slate-800 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center gap-4">
-          <div className="bg-white p-1 rounded-xl shadow-lg border border-slate-700/50 flex items-center justify-center">
-            <img
-              src="/logo.png"
-              alt="Al Shaheen Auto Hub"
-              className="h-11 w-auto object-contain"
-            />
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
+      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 xl:min-h-[76px] xl:flex-nowrap xl:px-8">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white p-1 shadow-sm sm:h-12 sm:w-[74px]">
+            <img src="/logo.png" alt="Al Shaheen Auto Hub" className="h-full w-full object-contain" />
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-lg font-black tracking-tight uppercase text-white">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-sm font-black uppercase tracking-wide text-white sm:text-base">
                 Al Shaheen Auto Hub
               </h1>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#ba1825]/20 text-rose-300 border border-[#ba1825]/40">
-                Customer Lounge Display
+              <span className="rounded-full border border-rose-400/20 bg-rose-400/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-200 sm:text-[10px]">
+                Customer Lounge
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Main Bedian Road, DHA Phase 6, Lahore • Live Workshop Operations
+            <p className="mt-1 truncate text-[10px] font-medium text-slate-400 sm:text-[11px]">
+              Main Bedian Road, DHA Phase 6, Lahore
             </p>
           </div>
         </div>
 
-        {/* Center: Live FIFO Announcement Notification */}
-        <div className="hidden lg:flex items-center">
+        <div className="hidden items-center xl:flex">
           <LoungeAudioEngine
             queue={announcementQueue}
             onAnnouncementComplete={handleAnnouncementFinished}
@@ -345,89 +349,117 @@ export default function LoungeTVPage() {
           />
         </div>
 
-        {/* Right Controls & Clock */}
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={handleTestVoice}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow"
-            title="Test Voice Announcement"
-          >
-            <Volume1 className="w-4 h-4 text-amber-400" />
-            Test Voice
-          </button>
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleTestVoice}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              title="Test Voice Announcement"
+            >
+              <Volume1 className="h-4 w-4 text-amber-400" />
+              <span className="hidden sm:inline">Test Voice</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleUnlockAudioAndFullscreen}
+              className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
+                isAudioUnlocked
+                  ? 'border border-emerald-400/25 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15'
+                  : 'bg-amber-400 text-slate-950 shadow-md shadow-amber-950/20 hover:bg-amber-300'
+              }`}
+            >
+              {isAudioUnlocked ? (
+                <Volume2 className="h-4 w-4" />
+              ) : (
+                <VolumeX className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isAudioUnlocked ? 'Audio Active' : 'Enable Audio'}
+              </span>
+              {isFullscreen ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={handleUnlockAudioAndFullscreen}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-lg ${
-              isAudioUnlocked
-                ? 'bg-slate-800 text-emerald-400 border border-emerald-500/40'
-                : 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-400 hover:to-amber-500 animate-pulse'
-            }`}
-          >
-            {isAudioUnlocked ? (
-              <>
-                <Volume2 className="w-4 h-4 text-emerald-400" />
-                Audio Active
-              </>
-            ) : (
-              <>
-                <VolumeX className="w-4 h-4" />
-                Unmute & Fullscreen
-              </>
-            )}
-          </button>
-
-          <div className="text-right pl-3 border-l border-slate-800">
-            <div className="text-lg font-black font-mono text-amber-400 tracking-wider">
-              {currentTime || '--:--:--'}
+          <div className="flex items-center gap-3 border-l border-white/10 pl-3 sm:pl-4">
+            <div className="text-right">
+              <div className="font-mono text-sm font-bold tabular-nums tracking-wide text-amber-300 sm:text-base">
+                {currentTime || '--:--:--'}
+              </div>
+              <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500 sm:text-[10px]">
+                {currentDate || 'PKT Lahore'}
+              </div>
             </div>
-            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-              {currentDate || 'PKT Lahore'}
-            </div>
-            <AuthSessionButton />
           </div>
         </div>
       </header>
 
-      {/* Main 50/50 Split View */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left 50%: Official YouTube Channel Playlist Loop */}
-        <div className="w-full md:w-1/2 h-full bg-black relative flex items-center justify-center border-r border-slate-800 overflow-hidden">
-          <div id="youtube-player-container" className="w-full h-full object-cover" />
-
-          {/* Overlay Watermark Badge */}
-          <div className="absolute top-4 left-4 pointer-events-none bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-bold text-amber-400 flex items-center gap-2 shadow-lg">
-            <Radio className="w-3.5 h-3.5 text-red-500 animate-ping" />
-            <span>Al Shaheen Media Broadcast</span>
+      <main className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:overflow-hidden">
+        <section className="relative min-h-[38vh] overflow-hidden border-b border-white/[0.08] bg-[radial-gradient(ellipse_at_center,_#182338_0%,_#070b12_70%)] xl:min-h-0 xl:border-b-0 xl:border-r">
+          <div id="youtube-player-container" className="absolute inset-0" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
+          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/75 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-100 shadow-lg backdrop-blur-md sm:left-6 sm:top-6 sm:text-xs">
+            <Radio className="h-3.5 w-3.5 text-rose-400" />
+            <span>Al Shaheen Media</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+            <span className="text-emerald-300">Live</span>
           </div>
-        </div>
+        </section>
 
-        {/* Right 50%: Live 12-Bay Queue */}
-        <div className="w-full md:w-1/2 h-full bg-[#0B1221] flex flex-col overflow-hidden">
-          {/* Queue Sub-Header */}
-          <div className="px-5 py-3 bg-[#0d1627] border-b border-slate-800 flex items-center justify-between shrink-0">
+        <section className="flex min-h-[48vh] min-w-0 flex-col overflow-hidden bg-[#0b1321] xl:min-h-0">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0d1727] px-4 py-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10">
+                <Car className="h-5 w-5 text-amber-300" />
+              </div>
+              <div>
+                <h2 className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-100 sm:text-sm">
+                  Live Bay & Delivery Status
+                </h2>
+                <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      queueStatus === 'live'
+                        ? 'bg-emerald-400'
+                        : queueStatus === 'error'
+                          ? 'bg-rose-400'
+                          : 'animate-pulse bg-amber-400'
+                    }`}
+                  />
+                  {queueStatus === 'live'
+                    ? 'Updates every 6 seconds'
+                    : queueStatus === 'error'
+                      ? 'Connection interrupted'
+                      : 'Connecting to workshop'}
+                </div>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
-              <Car className="w-5 h-5 text-amber-400" />
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-200">
-                Live Bay Matrix & Delivery Status
-              </h2>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                {displayQueue.filter((c) => c.status === 'READY_FOR_DELIVERY').length} Ready
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-bold text-emerald-300 sm:text-xs">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {readyCount} Ready
               </span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-400 font-medium">
-                {displayQueue.filter((c) => c.status === 'IN_PROGRESS').length} In Progress
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/15 bg-amber-400/[0.07] px-3 py-1.5 text-[10px] font-bold text-amber-200 sm:text-xs">
+                <Activity className="h-3.5 w-3.5" />
+                {inProgressCount} Active
               </span>
             </div>
           </div>
 
-          {/* Queue Card Feed */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5 xl:p-6">
+            {queueStatus === 'error' && displayQueue.length > 0 && (
+              <div
+                role="status"
+                className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 text-xs text-amber-200"
+              >
+                Live updates are temporarily unavailable. Showing the latest received status.
+              </div>
+            )}
+
             {displayQueue.map((card) => {
               const isReady = card.status === 'READY_FOR_DELIVERY';
               const isWash = card.bay_category === 'CAR_WASH';
@@ -436,97 +468,132 @@ export default function LoungeTVPage() {
                 : `BAY ${card.bay_number}`;
 
               return (
-                <div
+                <article
                   key={card.id}
-                  className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 shadow-xl ${
+                  className={`grid min-h-[104px] grid-cols-1 items-center gap-4 rounded-2xl border p-4 transition-colors duration-300 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-6 sm:px-5 ${
                     isReady
-                      ? 'bg-gradient-to-r from-emerald-950/80 via-slate-900 to-emerald-950/80 border-emerald-400 ring-2 ring-emerald-500/40 shadow-emerald-950/80 scale-[1.01]'
-                      : 'bg-slate-900/90 border-slate-800'
+                      ? 'border-emerald-400/35 bg-gradient-to-r from-emerald-400/[0.11] via-[#111d2a] to-[#111d2a] shadow-[inset_3px_0_0_0_rgba(52,211,153,0.85)]'
+                      : 'border-white/[0.08] bg-white/[0.035] hover:border-white/[0.14] hover:bg-white/[0.05]'
                   }`}
                 >
-                  {/* Left: Plate & Vehicle Info */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                     <div
-                      className={`px-3.5 py-2 rounded-xl font-mono font-black text-lg tracking-wider border shadow-md ${
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border sm:h-14 sm:w-14 ${
                         isReady
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-300 animate-pulse'
-                          : 'bg-slate-950 text-amber-400 border-amber-500/40'
+                          ? 'border-emerald-300/30 bg-emerald-400/10 text-emerald-200'
+                          : 'border-white/10 bg-slate-950/60 text-amber-200'
                       }`}
                     >
-                      {card.plate_number}
+                      <Car className="h-5 w-5" />
                     </div>
-
-                    <div>
-                      <h3 className="text-base font-extrabold text-white tracking-tight">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-bold tracking-tight text-white sm:text-base">
                         {card.make_model} {card.variant ? `(${card.variant})` : ''}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-400 sm:text-xs">
                         <span
-                          className={`font-semibold px-2 py-0.5 rounded text-[11px] ${
+                          className={`rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wide sm:text-[10px] ${
                             isWash
-                              ? 'bg-sky-950 text-sky-300 border border-sky-800/60'
-                              : 'bg-amber-950 text-amber-300 border border-amber-800/60'
+                              ? 'border-sky-400/20 bg-sky-400/[0.08] text-sky-200'
+                              : 'border-amber-400/20 bg-amber-400/[0.08] text-amber-200'
                           }`}
                         >
                           {bayLabel}
                         </span>
-                        <span>•</span>
-                        <span>{card.departments?.slice(0, 2).join(', ') || 'Service'}</span>
+                        <span className="truncate">
+                          {card.departments?.slice(0, 2).join(' · ') || 'General service'}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Status Badge & Gate Pass Indicator */}
-                  <div className="text-right">
+                  <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
                     {isReady ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30 tracking-wide uppercase animate-pulse">
-                          <CheckCircle2 className="w-4 h-4" />
-                          READY FOR DELIVERY
+                      <>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-950 shadow-sm sm:text-xs">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Ready for delivery
                         </span>
-                        <div className="text-[11px] text-emerald-300 font-mono">
-                          Gate Pass Issued
-                        </div>
-                      </div>
+                        <span className="text-[10px] font-medium text-emerald-200/75">
+                          Please proceed to the counter
+                        </span>
+                      </>
                     ) : (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 uppercase">
-                          <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
-                          IN PROGRESS
+                      <>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/[0.08] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-amber-100 sm:text-xs">
+                          <Clock className="h-3.5 w-3.5 text-amber-300" />
+                          Work in progress
                         </span>
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          Work Underway
-                        </div>
-                      </div>
+                        <span className="text-[10px] font-medium text-slate-500">
+                          Our team is working on your vehicle
+                        </span>
+                      </>
                     )}
                   </div>
-                </div>
+                </article>
               );
             })}
 
-            {displayQueue.length === 0 && (
-              <div className="h-64 flex flex-col items-center justify-center text-center p-6 space-y-2">
-                <Car className="w-12 h-12 text-slate-700" />
-                <h3 className="text-sm font-bold text-slate-400">All Bays Clear</h3>
-                <p className="text-xs text-slate-600">
-                  Vehicles undergoing inspection, wash, or repair will appear live on this screen.
+            {displayQueue.length === 0 && queueStatus === 'loading' && (
+              <div className="space-y-3" aria-label="Loading vehicle status">
+                {[0, 1].map((item) => (
+                  <div
+                    key={item}
+                    className="flex min-h-[104px] items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-5"
+                  >
+                    <div className="h-12 w-20 animate-pulse rounded-xl bg-white/[0.07]" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-2/5 animate-pulse rounded bg-white/[0.07]" />
+                      <div className="h-3 w-1/4 animate-pulse rounded bg-white/[0.05]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {displayQueue.length === 0 && queueStatus === 'error' && (
+              <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-rose-400/15 bg-rose-400/[0.035] p-6 text-center">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-400/10 text-rose-300">
+                  <Radio className="h-5 w-5" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-100">Unable to load live status</h3>
+                <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-400">
+                  The workshop feed could not be reached. The screen will retry automatically.
+                </p>
+                <button
+                  type="button"
+                  onClick={fetchCards}
+                  className="mt-4 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  Retry now
+                </button>
+              </div>
+            )}
+
+            {displayQueue.length === 0 && queueStatus === 'live' && (
+              <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.07]">
+                  <Car className="h-6 w-6 text-emerald-300" />
+                </div>
+                <h3 className="text-base font-bold text-slate-100">All bays are clear</h3>
+                <p className="mt-2 max-w-sm text-xs leading-relaxed text-slate-400">
+                  Vehicles will appear here as soon as they enter inspection, service, or detailing.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Footer Marquee Banner */}
-          <div className="py-2.5 px-5 bg-[#070d18] border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 font-medium">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-white/[0.08] bg-[#080e19] px-4 py-3 text-[10px] font-medium text-slate-400 sm:px-6 sm:text-xs">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>Free High-Speed Wi-Fi • Executive Coffee Bar • Track on Mobile at /track</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.65)]" />
+              <span>Guest Wi-Fi · Executive Coffee Bar · Track on mobile at /track</span>
             </div>
-            <div className="font-mono text-amber-400/90 font-bold">
-              Al Shaheen Auto Hub Lahore
+            <div className="font-mono font-bold text-amber-200/80">
+              Al Shaheen Auto Hub · Lahore
             </div>
-          </div>
-        </div>
-      </div>
+          </footer>
+        </section>
+      </main>
     </div>
   );
 }

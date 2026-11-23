@@ -12,6 +12,7 @@ import {
 } from '@/types';
 import CarBlueprint from './CarBlueprint';
 import { formatNumberedPoints } from '@/lib/diagnosisFormatting';
+import { detectDiagnosisLanguage } from '@/lib/diagnosisLanguage';
 import {
   Mic,
   MicOff,
@@ -36,6 +37,37 @@ interface JobCardFormProps {
   initialData?: JobCard | null;
   onSaveSuccess?: (saved: JobCard) => void;
   onPrint?: (card: JobCard) => void;
+}
+
+function mergeDiagnosisScope(
+  existingScope: string | undefined,
+  previousAiScope: string | undefined,
+  nextAiScope: string,
+  language: 'roman_urdu' | 'english'
+): string {
+  const existing = existingScope?.trim() || '';
+  if (!existing) return nextAiScope;
+
+  const markers = [
+    '[AI DIAGNOSTIC RECOMMENDATION]',
+    '[AI recommendation]',
+    '[AI ki tajweez]',
+  ];
+  const markerIndex = markers.reduce(
+    (latestIndex, marker) => Math.max(latestIndex, existing.lastIndexOf(`\n\n${marker}\n`)),
+    -1
+  );
+  const manualScope =
+    markerIndex >= 0
+      ? existing.slice(0, markerIndex).trim()
+      : existing === previousAiScope?.trim()
+        ? ''
+        : existing;
+
+  if (!manualScope) return nextAiScope;
+
+  const marker = language === 'roman_urdu' ? '[AI ki tajweez]' : '[AI recommendation]';
+  return `${manualScope}\n\n${marker}\n${nextAiScope}`;
 }
 
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
@@ -105,11 +137,18 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
   const recognitionRef = useRef<any>(null);
 
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiLanguage, setAiLanguage] = useState<'roman_urdu' | 'english'>('roman_urdu');
+  const savedAiLanguage =
+    initialData?.ai_diagnosis_result?.response_language ||
+    detectDiagnosisLanguage(initialData?.customer_concern || '');
+  const [aiLanguage, setAiLanguage] = useState<'roman_urdu' | 'english'>(savedAiLanguage);
   const [aiBanner, setAiBanner] = useState<string | null>(
-    initialData?.ai_diagnosis_result?.roman_urdu_explanation ||
-      initialData?.ai_diagnosis_result?.plain_english_explanation ||
-      null
+    savedAiLanguage === 'english'
+      ? initialData?.ai_diagnosis_result?.plain_english_explanation ||
+          initialData?.ai_diagnosis_result?.roman_urdu_explanation ||
+          null
+      : initialData?.ai_diagnosis_result?.roman_urdu_explanation ||
+          initialData?.ai_diagnosis_result?.plain_english_explanation ||
+          null
   );
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -248,8 +287,13 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       }
 
       const diag: AIDiagnosisResult = json.diagnosis;
-      setAiBanner(diag.roman_urdu_explanation || diag.plain_english_explanation);
-      setAiLanguage('roman_urdu');
+      const responseLanguage = diag.response_language || 'roman_urdu';
+      setAiLanguage(responseLanguage);
+      setAiBanner(
+        responseLanguage === 'english'
+          ? diag.plain_english_explanation || diag.roman_urdu_explanation || ''
+          : diag.roman_urdu_explanation || diag.plain_english_explanation || ''
+      );
 
       // Auto-check departments
       const newDepts = Array.from(
@@ -274,9 +318,12 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         ...prev,
         ai_diagnosis_result: diag,
         departments: newDepts,
-        work_to_be_done: prev.work_to_be_done
-          ? `${prev.work_to_be_done}\n\n[AI DIAGNOSTIC RECOMMENDATION]\n${diag.work_to_be_done}`
-          : diag.work_to_be_done,
+        work_to_be_done: mergeDiagnosisScope(
+          prev.work_to_be_done,
+          prev.ai_diagnosis_result?.work_to_be_done,
+          diag.work_to_be_done,
+          responseLanguage
+        ),
         itemized_parts: newParts,
       }));
     } catch (err: any) {
@@ -535,7 +582,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
             <Car className="w-4 h-4 text-amber-400" />
-            Section 1 — Customer & Vehicle Profile
+            Customer & Vehicle Profile
           </h3>
           <span className="text-xs text-slate-400 font-mono">Step 1 of 4</span>
         </div>
@@ -956,7 +1003,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               <label className="text-xs font-semibold text-slate-300">
                 Work To Be Done / Scope of Repairs (Master Tech Instructions)
               </label>
-              <span className="text-[10px] text-slate-500">Auto-populated by AI</span>
+              <span className="text-[10px] text-slate-500">
+                AI matches the language of the customer concern
+              </span>
             </div>
 
             <textarea
