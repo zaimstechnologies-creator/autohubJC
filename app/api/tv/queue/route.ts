@@ -7,6 +7,7 @@ type LoungeJobCard = Pick<
   JobCard,
   | 'id'
   | 'make_model'
+  | 'plate_number'
   | 'variant'
   | 'bay_category'
   | 'bay_number'
@@ -25,6 +26,7 @@ function toLoungeCard(card: Partial<JobCard>): LoungeJobCard {
   return {
     id: `${bayCategory}-${bayNumber}-${updatedAt}`,
     make_model: String(card.make_model || 'Vehicle'),
+    plate_number: String(card.plate_number || ''),
     variant: String(card.variant || ''),
     bay_category: bayCategory,
     bay_number: bayNumber,
@@ -39,7 +41,7 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from('job_cards')
       .select(
-        'make_model, variant, bay_category, bay_number, status, departments, updated_at'
+        'make_model, plate_number, variant, bay_category, bay_number, status, departments, updated_at'
       )
       .neq('status', 'CLOSED_PAID')
       .order('updated_at', { ascending: false });

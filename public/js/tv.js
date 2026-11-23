@@ -418,9 +418,9 @@ function playSingleAnnouncement(vehicle, onFinished) {
             window.speechSynthesis.resume();
         } catch (e) {}
 
-        const cleanPlate = (vehicle.plateNo || 'Vehicle').split('').join(' ');
+        const cleanPlate = (vehicle.plateNo || 'not available').split('').join(' ');
         const cleanModel = vehicle.makeModel ? `${vehicle.makeModel}` : '';
-        const speechText = `Attention please: Vehicle ${cleanPlate}, ${cleanModel}, is ready for collection. Please proceed to the Accounts Counter for key collection. Thank you!`;
+        const speechText = `Attention please. Registration number ${cleanPlate}, ${cleanModel}, is ready for delivery. Please proceed to the accounts counter. Thank you.`;
 
         const utterance = new SpeechSynthesisUtterance(speechText);
         utterance.rate = 0.88; // Calm, clear, professional broadcast cadence

@@ -5,7 +5,7 @@ import { JobCard } from '@/types';
 
 type AnnouncementJobCard = Pick<
   JobCard,
-  'id' | 'bay_category' | 'bay_number' | 'make_model'
+  'id' | 'bay_category' | 'bay_number' | 'make_model' | 'plate_number'
 >;
 
 interface LoungeAudioEngineProps {
@@ -79,7 +79,12 @@ export default function LoungeAudioEngine({
     const nextCard = queue[0];
     const isWash = nextCard.bay_category === 'CAR_WASH';
     const bayTitle = isWash ? `Car Wash Bay ${nextCard.bay_number}` : `Workshop Bay ${nextCard.bay_number}`;
-    const speechMessage = `Attention please. The ${nextCard.make_model || 'vehicle'} at ${bayTitle} is now ready for delivery.`;
+    const vehicleName = nextCard.make_model?.trim() || 'vehicle';
+    const plateNumber = nextCard.plate_number?.trim();
+    const registration = plateNumber
+      ? `Registration number ${plateNumber.split('').join(' ')}`
+      : 'The vehicle';
+    const speechMessage = `Attention please. ${registration}, ${vehicleName}, is now ready for delivery. Please proceed to the accounts counter. Thank you.`;
 
     setCurrentAnnouncementText(
       `Announcing: ${nextCard.make_model || 'Vehicle'} - ${bayTitle}`
@@ -116,19 +121,37 @@ export default function LoungeAudioEngine({
 
       window.speechSynthesis.cancel(); // Clear any hung speech
       const utterance = new SpeechSynthesisUtterance(speechMessage);
-      utterance.rate = 0.92;
-      utterance.pitch = 1.05;
+      utterance.rate = 0.82;
+      utterance.pitch = 1.0;
       utterance.volume = 1.0;
+      utterance.lang = 'en-US';
 
       // Select high quality English voice if available
       const voices = window.speechSynthesis.getVoices();
       const preferred =
-        voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('UK'))) ||
-        voices.find((v) => v.lang.startsWith('en'));
+        voices.find((v) =>
+          v.lang?.toLowerCase().startsWith('en') &&
+          /natural|neural|google us|jenny|aria|samantha|david|zira/i.test(v.name)
+        ) ||
+        voices.find((v) => v.lang?.toLowerCase().startsWith('en-us')) ||
+        voices.find((v) => v.lang?.toLowerCase().startsWith('en'));
       if (preferred) utterance.voice = preferred;
 
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        resolve();
+      };
+      const timeout = window.setTimeout(finish, 12000);
+      utterance.onend = () => {
+        window.clearTimeout(timeout);
+        finish();
+      };
+      utterance.onerror = () => {
+        window.clearTimeout(timeout);
+        finish();
+      };
 
       window.speechSynthesis.speak(utterance);
     });

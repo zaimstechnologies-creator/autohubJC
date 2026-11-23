@@ -4,22 +4,18 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
 import LoungeAudioEngine, { playWebAudioChime } from '@/components/LoungeAudioEngine';
 import {
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Minimize2,
   Radio,
   Activity,
   CheckCircle2,
   Clock,
   Car,
-  Volume1,
 } from 'lucide-react';
 
 type LoungeJobCard = Pick<
   JobCard,
   | 'id'
   | 'make_model'
+  | 'plate_number'
   | 'variant'
   | 'bay_category'
   | 'bay_number'
@@ -44,7 +40,6 @@ export default function LoungeTVPage() {
   );
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
 
@@ -79,9 +74,40 @@ export default function LoungeTVPage() {
   }, []);
 
   useEffect(() => {
-    const updateFullscreenState = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('fullscreenchange', updateFullscreenState);
-    return () => document.removeEventListener('fullscreenchange', updateFullscreenState);
+    const unlockAudio = async () => {
+      if (isAudioUnlocked) return;
+      setIsAudioUnlocked(true);
+
+      try {
+        await playWebAudioChime();
+      } catch (_) {}
+
+      try {
+        if (playerRef.current) {
+          if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
+          if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
+          if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
+          if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
+        }
+      } catch (err) {
+        console.warn('Automatic audio unlock error:', err);
+      }
+
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+
+    // Smart TVs and browsers usually require one interaction before speech/audio.
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+
+    const startupAttempt = window.setTimeout(unlockAudio, 800);
+
+    return () => {
+      window.clearTimeout(startupAttempt);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
   }, []);
 
   // Fetch job cards
@@ -220,85 +246,6 @@ export default function LoungeTVPage() {
     };
   }, [playlistId]);
 
-  // Unlock Audio & Fullscreen
-  const handleUnlockAudioAndFullscreen = async () => {
-    setIsAudioUnlocked(true);
-
-    // 1. Play sound context to unlock audio policy
-    try {
-      await playWebAudioChime();
-    } catch (_) {}
-
-    // 2. Unmute YouTube player & enforce playlist looping
-    try {
-      if (playerRef.current) {
-        if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
-        if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-        if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
-        if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
-      }
-    } catch (err) {
-      console.warn('Unmute error:', err);
-    }
-
-    // 3. Request Fullscreen
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.warn('Fullscreen toggle:', err);
-    }
-  };
-
-  // Test Voice Announcement
-  const handleTestVoice = () => {
-    const testCard: JobCard = {
-      id: `test_${Date.now()}`,
-      job_card_number: 'ASH-DEMO',
-      customer_name: 'Test Customer',
-      customer_phone: '0300-1234567',
-      plate_number: 'AQP 007',
-      make_model: 'Mazda Flair 007',
-      mileage_km: 45000,
-      bay_category: 'WORKSHOP',
-      bay_number: 1,
-      status: 'READY_FOR_DELIVERY',
-      fuel_level_percent: 75,
-      handed_over_inventory: { spare_wheel: true, tools: true, mats: true, valuables_cleared: true },
-      inspection_markers: [],
-      departments: ['Diagnostics'],
-      itemized_parts: [],
-      labor_charges: 0,
-      alignment_charges: 0,
-      discount_amount: 0,
-      advance_deposit: 0,
-      parts_total: 0,
-      net_payable: 0,
-      balance_remaining: 0,
-      quality_checks: {
-        exterior_clean: true,
-        interior_clean: true,
-        engine_area_clean: true,
-        all_systems_checked: true,
-        test_drive_done: true,
-        no_warning_lights: true,
-        work_completed: true,
-        customer_satisfied: true,
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      closed_at: null,
-      service_advisor: 'Master Incharge',
-    };
-
-    setAnnouncementQueue((prev) => [...prev, testCard]);
-  };
-
   const handleAnnouncementFinished = (cardId: string) => {
     setAnnouncementQueue((prev) => prev.filter((c) => c.id !== cardId));
     setAnnouncedCardIds((prev) => new Set(prev).add(cardId));
@@ -321,7 +268,7 @@ export default function LoungeTVPage() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
-      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 xl:min-h-[76px] xl:flex-nowrap xl:px-8">
+      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 lg:min-h-[76px] lg:flex-nowrap lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white p-1 shadow-sm sm:h-12 sm:w-[74px]">
             <img src="/logo.png" alt="Al Shaheen Auto Hub" className="h-full w-full object-contain" />
@@ -341,7 +288,7 @@ export default function LoungeTVPage() {
           </div>
         </div>
 
-        <div className="hidden items-center xl:flex">
+        <div className="hidden items-center lg:flex">
           <LoungeAudioEngine
             queue={announcementQueue}
             onAnnouncementComplete={handleAnnouncementFinished}
@@ -350,41 +297,6 @@ export default function LoungeTVPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleTestVoice}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-              title="Test Voice Announcement"
-            >
-              <Volume1 className="h-4 w-4 text-amber-400" />
-              <span className="hidden sm:inline">Test Voice</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleUnlockAudioAndFullscreen}
-              className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${
-                isAudioUnlocked
-                  ? 'border border-emerald-400/25 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15'
-                  : 'bg-amber-400 text-slate-950 shadow-md shadow-amber-950/20 hover:bg-amber-300'
-              }`}
-            >
-              {isAudioUnlocked ? (
-                <Volume2 className="h-4 w-4" />
-              ) : (
-                <VolumeX className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">
-                {isAudioUnlocked ? 'Audio Active' : 'Enable Audio'}
-              </span>
-              {isFullscreen ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
           <div className="flex items-center gap-3 border-l border-white/10 pl-3 sm:pl-4">
             <div className="text-right">
               <div className="font-mono text-sm font-bold tabular-nums tracking-wide text-amber-300 sm:text-base">
@@ -398,8 +310,8 @@ export default function LoungeTVPage() {
         </div>
       </header>
 
-      <main className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:overflow-hidden">
-        <section className="relative min-h-[38vh] overflow-hidden border-b border-white/[0.08] bg-[radial-gradient(ellipse_at_center,_#182338_0%,_#070b12_70%)] xl:min-h-0 xl:border-b-0 xl:border-r">
+      <main className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:overflow-hidden">
+        <section className="relative min-h-[38vh] overflow-hidden border-b border-white/[0.08] bg-[radial-gradient(ellipse_at_center,_#182338_0%,_#070b12_70%)] lg:min-h-0 lg:border-b-0 lg:border-r">
           <div id="youtube-player-container" className="absolute inset-0" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
           <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/75 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-100 shadow-lg backdrop-blur-md sm:left-6 sm:top-6 sm:text-xs">
@@ -410,7 +322,7 @@ export default function LoungeTVPage() {
           </div>
         </section>
 
-        <section className="flex min-h-[48vh] min-w-0 flex-col overflow-hidden bg-[#0b1321] xl:min-h-0">
+        <section className="flex min-h-[48vh] min-w-0 flex-col overflow-hidden bg-[#0b1321] lg:min-h-0">
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0d1727] px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10">
