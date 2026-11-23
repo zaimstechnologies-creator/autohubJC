@@ -183,55 +183,55 @@ export default function WorkshopDashboard() {
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans">
       {/* Top Header Bar */}
-      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-3.5 sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-slate-800/80 bg-slate-950/95 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-3.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:gap-3 lg:w-auto">
           <div className="bg-white p-1 rounded-xl shadow-md border border-slate-700/40 flex items-center justify-center">
             <img
               src="/logo.png"
               alt="Al Shaheen Auto Hub"
-              className="h-10 w-auto object-contain"
+              className="h-9 w-auto shrink-0 object-contain sm:h-10"
             />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-black text-white tracking-tight uppercase">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h1 className="text-sm font-black uppercase tracking-tight text-white sm:text-base">
                 Al Shaheen Auto Hub
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ba1825]/20 text-rose-300 border border-[#ba1825]/40 font-bold">
+              <span className="rounded-full border border-[#ba1825]/40 bg-[#ba1825]/20 px-2 py-0.5 font-mono text-[9px] font-bold text-rose-300 sm:text-[10px]">
                 Enterprise OS
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[10px] leading-snug text-slate-400 sm:text-[11px]">
               Main Bedian Road, DHA Phase 6, Lahore • Tel: +92 344-1411123
             </p>
           </div>
         </div>
 
         {/* Global Action Links */}
-        <div className="flex items-center gap-2.5">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-2.5 lg:w-auto">
           <Link
             href="/tv"
             target="_blank"
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition shadow"
+            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-sky-500/30 bg-slate-900 px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-sky-400 shadow transition hover:bg-slate-800 sm:px-3.5 sm:text-xs"
           >
-            <Tv className="w-4 h-4 text-sky-400" />
+            <Tv className="h-4 w-4 shrink-0 text-sky-400" />
             60" Lounge TV (Live)
           </Link>
-
           <Link
             href="/track"
             target="_blank"
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition shadow"
+            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-slate-900 px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-emerald-400 shadow transition hover:bg-slate-800 sm:px-3.5 sm:text-xs"
           >
-            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <Smartphone className="h-4 w-4 shrink-0 text-emerald-400" />
             Customer Tracker
           </Link>
 
           <button
             type="button"
             onClick={() => setSettingsModalOpen(true)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
             title="AI & Lounge Settings"
+            aria-label="AI and lounge settings"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -239,17 +239,18 @@ export default function WorkshopDashboard() {
           <button
             type="button"
             onClick={loadJobCards}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
             title="Refresh Data"
+            aria-label="Refresh data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
-          <AuthSessionButton />
+          <AuthSessionButton fullWidth />
 
           <Link
             href="/workshop/job-card/new"
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#ba1825] hover:bg-[#a1141f] text-white flex items-center gap-1.5 transition shadow-lg shadow-rose-950/40"
+            className="col-span-2 flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[#ba1825] px-4 py-2 text-center text-xs font-bold leading-tight text-white shadow-lg shadow-rose-950/40 transition hover:bg-[#a1141f] sm:col-span-1 sm:w-auto"
           >
             <PlusCircle className="w-4 h-4" />
             Create New Job Card
@@ -258,14 +259,14 @@ export default function WorkshopDashboard() {
       </header>
 
       {/* Main Workspace Body */}
-      <main className="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+      <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 space-y-4 p-3 sm:space-y-6 sm:p-6">
         {/* Executive Operations HUD */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow">
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
               Active in Workshop
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-white">
                 {activeCards.length}
               </span>
@@ -273,11 +274,11 @@ export default function WorkshopDashboard() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-emerald-500/40 shadow">
+          <div className="min-w-0 rounded-2xl border border-emerald-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">
               Ready for Exit
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-emerald-400 animate-pulse">
                 {readyCards.length}
               </span>
@@ -285,11 +286,11 @@ export default function WorkshopDashboard() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow">
+          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
               Settled Today
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-white">
                 {closedTodayCards.length}
               </span>
@@ -297,22 +298,22 @@ export default function WorkshopDashboard() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-amber-500/40 shadow">
+          <div className="min-w-0 rounded-2xl border border-amber-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
               Total Invoiced (PKR)
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-xl font-black font-mono text-amber-400 truncate">
                 {totalInvoicedRevenue.toLocaleString()}
               </span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow">
+          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
               Avg Turnaround
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-sky-400">
                 1.8 <span className="text-xs text-slate-400 font-sans">Hrs</span>
               </span>
@@ -320,11 +321,11 @@ export default function WorkshopDashboard() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-purple-500/40 shadow">
+          <div className="min-w-0 rounded-2xl border border-purple-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
             <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider block">
               AI First-Pass
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
+            <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-purple-300">
                 98.6%
               </span>
@@ -334,101 +335,112 @@ export default function WorkshopDashboard() {
         </div>
 
         {/* Tab & Navigation Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-slate-900/70 rounded-2xl border border-slate-800">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab('matrix')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'matrix'
                   ? 'bg-amber-500 text-slate-950 shadow'
                   : 'bg-slate-950 text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="h-4 w-4 shrink-0" />
               12-Bay Matrix
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('cards')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'cards'
                   ? 'bg-amber-500 text-slate-950 shadow'
                   : 'bg-slate-950 text-slate-400 hover:text-white'
               }`}
+              aria-label={`Active Job Cards (${activeCards.length})`}
             >
-              <Car className="w-4 h-4" />
-              Active Job Cards ({activeCards.length})
+              <Car className="h-4 w-4 shrink-0" />
+              <span className="sm:hidden">Active ({activeCards.length})</span>
+              <span className="hidden sm:inline">Active Job Cards ({activeCards.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('closed')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'closed'
                   ? 'bg-amber-500 text-slate-950 shadow'
                   : 'bg-slate-950 text-slate-400 hover:text-white'
               }`}
+              aria-label={`Closed & Paid Today (${closedTodayCards.length})`}
             >
-              <CreditCard className="w-4 h-4" />
-              Closed & Paid Today ({closedTodayCards.length})
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span className="sm:hidden">Closed ({closedTodayCards.length})</span>
+              <span className="hidden sm:inline">Closed & Paid Today ({closedTodayCards.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('archive')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'archive'
                   ? 'bg-amber-500 text-slate-950 shadow'
                   : 'bg-slate-950 text-slate-400 hover:text-white'
               }`}
             >
-              <Archive className="w-4 h-4" />
-              Archive Ledger
+              <Archive className="h-4 w-4 shrink-0" />
+              <span className="sm:hidden">Archive</span>
+              <span className="hidden sm:inline">Archive Ledger</span>
             </button>
           </div>
 
           {activeTab === 'matrix' && (
-            <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1 text-[10px] sm:flex sm:w-auto sm:gap-1.5 sm:text-xs">
               <button
                 type="button"
                 onClick={() => setSelectedBayFilter('ALL')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                aria-label="Show all 12 bays"
+                className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'ALL'
                     ? 'bg-slate-800 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                All 12 Bays
+                <span className="sm:hidden">All Bays</span>
+                <span className="hidden sm:inline">All 12 Bays</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedBayFilter('WORKSHOP')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                aria-label="Show 6 workshop bays"
+                className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'WORKSHOP'
                     ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                6 Workshop Bays
+                <span className="sm:hidden">Workshop</span>
+                <span className="hidden sm:inline">6 Workshop Bays</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedBayFilter('CAR_WASH')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                aria-label="Show 6 wash bays"
+                className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'CAR_WASH'
                     ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                6 Wash Bays
+                <span className="sm:hidden">Wash</span>
+                <span className="hidden sm:inline">6 Wash Bays</span>
               </button>
             </div>
           )}
 
           {activeTab !== 'matrix' && (
-            <div className="relative min-w-[240px]">
+            <div className="relative w-full sm:min-w-[240px] sm:w-auto">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
@@ -443,18 +455,18 @@ export default function WorkshopDashboard() {
 
         {/* TAB 1: 12-BAY MATRIX VIEW */}
         {activeTab === 'matrix' && (
-          <div className="space-y-8">
+          <div className="min-w-0 space-y-6 sm:space-y-8">
             {/* Workshop Bays (1–6) */}
             {(selectedBayFilter === 'ALL' || selectedBayFilter === 'WORKSHOP') && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Wrench className="w-5 h-5 text-amber-400" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-col gap-1 border-b border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-white sm:text-sm">
                       Workshop Bays (Diagnostics, Mechanical & Detailing)
                     </h3>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono">Bays 1 to 6</span>
+                  <span className="pl-7 font-mono text-[10px] text-slate-500 sm:pl-0 sm:text-xs">Bays 1 to 6</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -483,15 +495,15 @@ export default function WorkshopDashboard() {
 
             {/* Car Wash Bays (1–6) */}
             {(selectedBayFilter === 'ALL' || selectedBayFilter === 'CAR_WASH') && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Droplets className="w-5 h-5 text-sky-400" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-col gap-1 border-b border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <Droplets className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" />
+                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-white sm:text-sm">
                       Car Wash & Detailing Bays (1–6)
                     </h3>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono">Wash Bays 1 to 6</span>
+                  <span className="pl-7 font-mono text-[10px] text-slate-500 sm:pl-0 sm:text-xs">Wash Bays 1 to 6</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -4,8 +4,8 @@ export type BayCategory = 'WORKSHOP' | 'CAR_WASH';
 
 export interface InspectionMarker {
   id: string;
-  x: number; // percentage (0-100) or SVG units
-  y: number; // percentage (0-100) or SVG units
+  x: number; // Percentage of the vehicle bounds (0-100)
+  y: number; // Percentage of the vehicle bounds (0-100)
   type: 'DENT' | 'SCRATCH' | 'CHIP' | 'RUST';
   note?: string;
   createdAt?: string;

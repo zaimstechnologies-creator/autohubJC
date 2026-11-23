@@ -1,7 +1,6 @@
 const SESSION_COOKIE_NAME = 'ash_admin_session';
-const SESSION_DURATION_SECONDS = 8 * 60 * 60;
-const REMEMBERED_SESSION_DURATION_SECONDS = 14 * 24 * 60 * 60;
-const MAX_SESSION_DURATION_SECONDS = REMEMBERED_SESSION_DURATION_SECONDS;
+const SESSION_DURATION_SECONDS = 14 * 24 * 60 * 60;
+const MAX_SESSION_DURATION_SECONDS = SESSION_DURATION_SECONDS;
 
 export type AdminSession = {
   username: string;
@@ -42,20 +41,18 @@ function fromBase64Url(value: string): Uint8Array | null {
 }
 
 export async function createSessionToken(
-  username: string,
-  rememberMe: boolean
+  username: string
 ): Promise<{ token: string; maxAge: number }> {
   const keyPromise = getSigningKey();
   if (!keyPromise) throw new Error('Authentication signing secret is not configured.');
 
-  const maxAge = rememberMe
-    ? REMEMBERED_SESSION_DURATION_SECONDS
-    : SESSION_DURATION_SECONDS;
+  const maxAge = SESSION_DURATION_SECONDS;
   const issuedAt = Math.floor(Date.now() / 1000);
   const payload = toBase64Url(
     new TextEncoder().encode(
       JSON.stringify({
         version: 1,
+        jti: crypto.randomUUID(),
         sub: username,
         iat: issuedAt,
         exp: issuedAt + maxAge,

@@ -66,7 +66,7 @@ export default function BayMatrixCard({
 
   return (
     <div
-      className={`relative rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg ${
+      className={`relative flex min-w-0 flex-col justify-between overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${
         card
           ? isReady
             ? 'bg-gradient-to-b from-emerald-950/60 to-slate-900 border-emerald-500/80 shadow-emerald-950/40'
@@ -79,31 +79,31 @@ export default function BayMatrixCard({
     >
       {/* Top Bay Header */}
       <div
-        className={`px-3.5 py-2.5 flex items-center justify-between border-b ${
+        className={`flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5 sm:px-3.5 ${
           isCarWash
             ? 'bg-sky-950/40 border-sky-800/40'
             : 'bg-amber-950/30 border-amber-800/40'
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-start gap-2">
           {isCarWash ? (
-            <Droplets className="w-4 h-4 text-sky-400" />
+            <Droplets className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
           ) : (
-            <Wrench className="w-4 h-4 text-amber-400" />
+            <Wrench className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
           )}
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+          <span className="min-w-0 break-words text-[11px] font-bold uppercase leading-snug tracking-wider text-slate-200 sm:text-xs">
             {bayName}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           {isLocked && (
             <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800">
               <Lock className="w-2.5 h-2.5 animate-spin" /> Locked
             </span>
           )}
           <span
-            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+            className={`max-w-full whitespace-normal rounded px-2 py-1 text-center font-mono text-[9px] font-bold leading-tight sm:py-0.5 sm:text-[10px] ${
               card
                 ? isReady
                   ? 'bg-emerald-500 text-slate-950 font-black animate-pulse'
@@ -118,37 +118,39 @@ export default function BayMatrixCard({
 
       {/* Card Body */}
       {card ? (
-        <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+        <div className="flex flex-1 flex-col justify-between space-y-2.5 p-3 sm:p-3.5">
           <div>
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <span className="text-xs font-black font-mono tracking-wider px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30 inline-block mb-1">
+              <div className="min-w-0">
+                <span className="mb-1 inline-block max-w-full break-all rounded border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 font-mono text-xs font-black tracking-wider text-amber-400">
                   {card.plate_number}
                 </span>
-                <h4 className="text-sm font-bold text-white tracking-tight leading-snug">
+                <h4 className="break-words text-sm font-bold leading-snug tracking-tight text-white">
                   {card.make_model} {card.variant ? `(${card.variant})` : ''}
                 </h4>
               </div>
 
               <Link
                 href={`/workshop/job-card/${card.id}`}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+                className="flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 p-1.5 text-slate-400 transition hover:bg-slate-700 hover:text-white"
                 title="Open Job Card"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-              <span>Customer: {card.customer_name}</span>
-              <span className="font-mono text-slate-500">{card.customer_phone}</span>
+            <div className="mt-1 flex flex-wrap items-start justify-between gap-x-2 gap-y-1 text-[11px] text-slate-400">
+              <span className="min-w-0 break-words">Customer: {card.customer_name}</span>
+              <span className="break-all font-mono text-[10px] text-slate-500 sm:break-normal sm:text-[11px]">
+                {card.customer_phone}
+              </span>
             </div>
           </div>
 
           {/* Quick Metrics */}
           <div className="space-y-1.5 pt-1.5 border-t border-slate-800/80">
             {/* Fuel level & markers */}
-            <div className="flex items-center justify-between text-[10.5px]">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10.5px]">
               <span className="flex items-center gap-1 text-slate-400">
                 <Fuel className="w-3 h-3 text-amber-400" />
                 {card.fuel_level_percent}% Fuel
@@ -179,12 +181,12 @@ export default function BayMatrixCard({
           </div>
 
           {/* Quick Bay Actions */}
-          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-2">
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowMoveMenu(!showMoveMenu)}
-                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 flex items-center gap-1 transition"
+                className="flex min-h-9 items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
                 title="Move vehicle to another bay"
               >
                 <ArrowRightLeft className="w-3 h-3 text-sky-400" />
@@ -237,12 +239,12 @@ export default function BayMatrixCard({
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1">
               {!isReady && !isClosed && (
                 <button
                   type="button"
                   onClick={() => handleSetStatus('READY_FOR_DELIVERY')}
-                  className="px-2 py-1 text-[11px] font-bold rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white transition flex items-center gap-1 shadow"
+                  className="flex min-h-9 items-center gap-1 rounded-lg bg-emerald-700 px-2 py-1 text-[11px] font-bold text-white shadow transition hover:bg-emerald-600"
                   title="Trigger TV Voice Announcement & Ready Status"
                 >
                   <CheckCircle2 className="w-3 h-3" />
@@ -254,7 +256,7 @@ export default function BayMatrixCard({
                 <button
                   type="button"
                   onClick={() => handleSetStatus('CLOSED_PAID')}
-                  className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-blue-700 hover:bg-blue-600 text-white transition flex items-center gap-1"
+                  className="flex min-h-9 items-center gap-1 rounded-lg bg-blue-700 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-blue-600"
                   title="Mark Paid & Archive"
                 >
                   <CreditCard className="w-3 h-3" />
@@ -265,7 +267,7 @@ export default function BayMatrixCard({
           </div>
         </div>
       ) : (
-        <div className="p-4 flex-1 flex flex-col items-center justify-center text-center space-y-1">
+        <div className="flex flex-1 flex-col items-center justify-center space-y-1 p-4 text-center">
           <Car className="w-7 h-7 text-slate-700 stroke-[1.5]" />
           <p className="text-xs font-semibold text-slate-500">Bay Available</p>
           <Link

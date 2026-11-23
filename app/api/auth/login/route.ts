@@ -41,17 +41,20 @@ export async function POST(request: NextRequest) {
   const credentials = body as Record<string, unknown>;
   if (
     typeof credentials.username !== 'string' ||
-    typeof credentials.pin !== 'string' ||
+    typeof credentials.password !== 'string' ||
     credentials.username.trim().length === 0 ||
     credentials.username.length > 128 ||
-    !/^\d{8}$/.test(credentials.pin)
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}$/.test(credentials.password)
   ) {
-    return NextResponse.json({ error: 'Enter your username and 8-digit PIN.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Password must be exactly 12 characters with uppercase, lowercase, a number, and a symbol.' },
+      { status: 400 }
+    );
   }
 
-  if (!(await verifyAdminCredentials(credentials.username, credentials.pin))) {
+  if (!(await verifyAdminCredentials(credentials.username, credentials.password))) {
     return NextResponse.json(
-      { error: 'Invalid username or PIN.' },
+      { error: 'Invalid username or password.' },
       { status: 401, headers: { 'Cache-Control': 'no-store' } }
     );
   }
@@ -64,8 +67,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const rememberMe = credentials.rememberMe === true;
-  const { token, maxAge } = await createSessionToken(username, rememberMe);
+  const { token, maxAge } = await createSessionToken(username);
   const response = NextResponse.json({ success: true });
   response.headers.set('Cache-Control', 'no-store');
   response.cookies.set(adminSessionCookie, token, {

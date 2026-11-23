@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { LogOut } from 'lucide-react';
 
-export default function AuthSessionButton() {
+interface AuthSessionButtonProps {
+  fullWidth?: boolean;
+}
+
+export default function AuthSessionButton({ fullWidth = false }: AuthSessionButtonProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState('');
 
@@ -37,12 +41,16 @@ export default function AuthSessionButton() {
   }
 
   return (
-    <div className="flex items-center gap-2 print:hidden">
+    <div
+      className={`flex items-center gap-2 print:hidden ${
+        fullWidth ? 'w-full flex-col items-stretch sm:w-auto sm:flex-row sm:items-center' : ''
+      }`}
+    >
       <button
         type="button"
         onClick={handleSignOut}
         disabled={isSigningOut}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60"
+        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60 ${fullWidth ? 'w-full sm:w-auto' : ''}`}
       >
         <LogOut className="h-4 w-4" aria-hidden="true" />
         {isSigningOut ? 'Signing out…' : 'Log Out'}

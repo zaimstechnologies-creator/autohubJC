@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { LockKeyhole } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
 
 function getAppRedirect(): string {
   const requested = new URLSearchParams(window.location.search).get('next');
@@ -25,8 +25,8 @@ function getAppRedirect(): string {
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,7 +40,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ username, pin, rememberMe }),
+        body: JSON.stringify({ username, password }),
       });
       const result = await response.json();
 
@@ -103,37 +103,43 @@ export default function LoginPage() {
 
           <div>
             <label
-              htmlFor="pin"
+              htmlFor="password"
               className="mb-1.5 block text-[12px] font-extrabold tracking-wide text-slate-800"
             >
-              8-DIGIT PIN
+              PASSWORD
             </label>
-            <input
-              id="pin"
-              name="pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]{8}"
-              autoComplete="off"
-              required
-              minLength={8}
-              maxLength={8}
-              value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
-              placeholder="Enter your 8-digit PIN"
-              className="h-12 w-full rounded-[10px] border border-slate-300 px-4 text-[14px] outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}"
+                autoComplete="current-password"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                minLength={12}
+                maxLength={12}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your 12-character password"
+                className="h-12 w-full rounded-[10px] border border-slate-300 px-4 pr-12 text-[14px] outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-[10px] text-slate-500 transition hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
           </div>
-
-          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-slate-500">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(event) => setRememberMe(event.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 accent-[#101b34]"
-            />
-            Stay signed in on this computer
-          </label>
 
           {error && (
             <p
@@ -153,10 +159,6 @@ export default function LoginPage() {
             {isSubmitting ? 'Signing In…' : 'Log In Securely'}
           </button>
         </form>
-
-        <footer className="mt-8 text-center text-[12px] text-slate-400">
-          Al Shaheen Security Shield
-        </footer>
       </section>
     </main>
   );

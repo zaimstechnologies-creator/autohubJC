@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { InspectionMarker } from '@/types';
-import { Undo, Trash2, AlertCircle } from 'lucide-react';
+import { AlertCircle, Trash2, Undo } from 'lucide-react';
 
 interface CarBlueprintProps {
   markers: InspectionMarker[];
@@ -12,60 +12,49 @@ interface CarBlueprintProps {
 
 type DefectType = 'DENT' | 'SCRATCH' | 'CHIP' | 'RUST';
 
-const DEFECT_CONFIG: Record<DefectType, { label: string; badge: string; color: string; border: string; bg: string; text: string }> = {
-  DENT: {
-    label: 'Dent [D]',
-    badge: 'D',
-    color: '#f59e0b',
-    border: 'border-amber-500',
-    bg: 'bg-amber-500',
-    text: 'text-amber-500',
-  },
-  SCRATCH: {
-    label: 'Scratch [S]',
-    badge: 'S',
-    color: '#0284c7',
-    border: 'border-sky-500',
-    bg: 'bg-sky-500',
-    text: 'text-sky-500',
-  },
-  CHIP: {
-    label: 'Chip [C]',
-    badge: 'C',
-    color: '#8b5cf6',
-    border: 'border-purple-500',
-    bg: 'bg-purple-500',
-    text: 'text-purple-500',
-  },
-  RUST: {
-    label: 'Rust [R]',
-    badge: 'R',
-    color: '#e11d48',
-    border: 'border-rose-500',
-    bg: 'bg-rose-500',
-    text: 'text-rose-500',
-  },
+const DEFECT_CONFIG: Record<DefectType, { label: string; badge: string; color: string; bg: string }> = {
+  DENT: { label: 'Dent', badge: 'D', color: '#f59e0b', bg: 'bg-amber-500' },
+  SCRATCH: { label: 'Scratch', badge: 'S', color: '#0ea5e9', bg: 'bg-sky-500' },
+  CHIP: { label: 'Chip', badge: 'C', color: '#a78bfa', bg: 'bg-violet-500' },
+  RUST: { label: 'Rust', badge: 'R', color: '#fb7185', bg: 'bg-rose-500' },
 };
+
+const VEHICLE_BOUNDS = { left: 70, right: 930, top: 60, bottom: 360 };
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 export default function CarBlueprint({ markers = [], onChange, readOnly = false }: CarBlueprintProps) {
   const [selectedType, setSelectedType] = useState<DefectType>('DENT');
-  const [hoveredMarker, setHoveredMarker] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const canEdit = !readOnly && Boolean(onChange);
 
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (readOnly || !onChange || !containerRef.current) return;
+  const handleVehicleClick = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!canEdit || !onChange) return;
+    if (!(event.target as SVGElement).closest('[data-inspection-surface]')) return;
 
-    // Avoid adding marker if clicked directly on an existing marker
-    if ((e.target as HTMLElement).closest('.defect-marker-badge')) return;
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 1000) / 10;
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 1000) / 10;
+    const point = event.currentTarget.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const location = point.matrixTransform(matrix.inverse());
+    const x = clamp(
+      ((location.x - VEHICLE_BOUNDS.left) / (VEHICLE_BOUNDS.right - VEHICLE_BOUNDS.left)) * 100,
+      0,
+      100
+    );
+    const y = clamp(
+      ((location.y - VEHICLE_BOUNDS.top) / (VEHICLE_BOUNDS.bottom - VEHICLE_BOUNDS.top)) * 100,
+      0,
+      100
+    );
 
     const newMarker: InspectionMarker = {
       id: `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      x,
-      y,
+      x: Math.round(x * 10) / 10,
+      y: Math.round(y * 10) / 10,
       type: selectedType,
       createdAt: new Date().toISOString(),
     };
@@ -73,62 +62,59 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
     onChange([...markers, newMarker]);
   };
 
-  const handleRemoveMarker = (id: string, e?: React.MouseEvent) => {
-    if (readOnly || !onChange) return;
-    if (e) e.stopPropagation();
-    onChange(markers.filter((m) => m.id !== id));
+  const handleRemoveMarker = (id: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    if (!canEdit || !onChange) return;
+    onChange(markers.filter((marker) => marker.id !== id));
   };
 
-  const handleUndo = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (readOnly || !onChange || markers.length === 0) return;
+  const handleUndo = () => {
+    if (!canEdit || !onChange || markers.length === 0) return;
     onChange(markers.slice(0, -1));
   };
 
-  const handleClearAll = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (readOnly || !onChange || markers.length === 0) return;
-    if (window.confirm('Clear all defect markers on the car blueprint?')) {
-      onChange([]);
-    }
+  const handleClearAll = () => {
+    if (!canEdit || !onChange || markers.length === 0) return;
+    if (window.confirm('Clear all defect markers on the vehicle?')) onChange([]);
   };
 
   const counts = {
-    DENT: markers.filter((m) => m.type === 'DENT').length,
-    SCRATCH: markers.filter((m) => m.type === 'SCRATCH').length,
-    CHIP: markers.filter((m) => m.type === 'CHIP').length,
-    RUST: markers.filter((m) => m.type === 'RUST').length,
+    DENT: markers.filter((marker) => marker.type === 'DENT').length,
+    SCRATCH: markers.filter((marker) => marker.type === 'SCRATCH').length,
+    CHIP: markers.filter((marker) => marker.type === 'CHIP').length,
+    RUST: markers.filter((marker) => marker.type === 'RUST').length,
   };
 
   return (
-    <div className="w-full select-none">
-      {/* Controls Bar (Hidden in ReadOnly / Print mode) */}
+    <div className="w-full">
       {!readOnly && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 p-2.5 bg-slate-900/80 rounded-xl border border-slate-700/60 backdrop-blur-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/70 bg-slate-900/80 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mr-1">
-              Select Defect:
+            <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Mark a defect
             </span>
-            {(['DENT', 'SCRATCH', 'CHIP', 'RUST'] as DefectType[]).map((type) => {
-              const cfg = DEFECT_CONFIG[type];
-              const isActive = selectedType === type;
+            {(Object.keys(DEFECT_CONFIG) as DefectType[]).map((type) => {
+              const config = DEFECT_CONFIG[type];
+              const isSelected = selectedType === type;
+
               return (
                 <button
                   key={type}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedType(type)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
-                    isActive
-                      ? `${cfg.bg} text-white ring-2 ring-white/50 scale-105 shadow-md`
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-600/50'
+                  className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 ${
+                    isSelected
+                      ? `${config.bg} border-white/30 text-white shadow-sm`
+                      : 'border-slate-700 bg-slate-950/70 text-slate-300 hover:border-slate-500 hover:bg-slate-800'
                   }`}
                 >
-                  <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
-                    {cfg.badge}
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/20 text-[10px] font-black">
+                    {config.badge}
                   </span>
-                  <span>{type}</span>
+                  {config.label}
                   {counts[type] > 0 && (
-                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 text-white font-mono">
+                    <span className="rounded-full bg-black/20 px-1.5 py-0.5 font-mono text-[10px]">
                       {counts[type]}
                     </span>
                   )}
@@ -142,175 +128,199 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
               type="button"
               onClick={handleUndo}
               disabled={markers.length === 0}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-600/60 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition"
-              title="Undo last placed marker"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Undo the most recently added marker"
             >
-              <Undo className="w-3.5 h-3.5" />
+              <Undo className="h-3.5 w-3.5" />
               Undo
             </button>
             <button
               type="button"
               onClick={handleClearAll}
               disabled={markers.length === 0}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-rose-950/60 text-rose-300 hover:text-white hover:bg-rose-900 border border-rose-800/60 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition"
-              title="Clear all defect markers"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-900/70 bg-rose-950/40 px-3 text-xs font-semibold text-rose-200 transition hover:bg-rose-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              Clear All
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear all
             </button>
           </div>
         </div>
       )}
 
-      {/* Blueprint Visual Canvas */}
-      <div
-        ref={containerRef}
-        onClick={handleContainerClick}
-        className={`relative w-full rounded-xl overflow-hidden border border-slate-700/80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 shadow-inner flex items-center justify-center p-3 ${
-          readOnly ? 'cursor-default' : 'cursor-crosshair group'
-        }`}
-        style={{ minHeight: '220px' }}
-      >
-        {/* Subtle grid pattern for precision blueprint look */}
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
-
-        {/* Blueprint Top-Down Car SVG */}
+      <div className="overflow-hidden rounded-xl border border-slate-700/80 bg-[radial-gradient(ellipse_at_center,_#111d2d_0%,_#080f1d_72%)] shadow-inner">
         <svg
-          viewBox="0 0 520 185"
-          className="w-full max-w-2xl h-auto drop-shadow-md select-none pointer-events-none"
+          viewBox="0 0 1000 420"
+          role="img"
+          aria-label="Top-down vehicle exterior inspection diagram"
+          onClick={handleVehicleClick}
+          className="block h-auto min-h-[260px] w-full select-none md:min-h-[320px] xl:max-h-[460px]"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <g stroke="#64748b" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            {/* Front Bumper & Nose */}
-            <path d="M 65,26 C 45,26 36,36 36,50 L 36,98 C 36,112 45,122 65,122" fill="#0f172a" stroke="#38bdf8" />
-            <path d="M 38,36 C 30,42 30,106 38,112" strokeWidth="1.8" stroke="#38bdf8" />
+          <defs>
+            <linearGradient id="inspection-car-paint" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#2b3c52" />
+              <stop offset="0.5" stopColor="#172638" />
+              <stop offset="1" stopColor="#2b3c52" />
+            </linearGradient>
+            <linearGradient id="inspection-car-glass" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#173d57" />
+              <stop offset="1" stopColor="#0d2032" />
+            </linearGradient>
+          </defs>
 
-            {/* Front Headlights */}
-            <circle cx="48" cy="40" r="4.5" fill="#38bdf8" fillOpacity="0.4" stroke="#38bdf8" />
-            <circle cx="58" cy="40" r="3.5" fill="#38bdf8" fillOpacity="0.2" stroke="#38bdf8" />
-            <circle cx="48" cy="108" r="4.5" fill="#38bdf8" fillOpacity="0.4" stroke="#38bdf8" />
-            <circle cx="58" cy="108" r="3.5" fill="#38bdf8" fillOpacity="0.2" stroke="#38bdf8" />
+          <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
+            <path d="M90 210h820" stroke="#1e293b" strokeDasharray="5 12" strokeWidth="1" />
 
-            {/* Bonnet / Hood Lines */}
-            <path d="M 65,48 L 130,45" stroke="#475569" strokeDasharray="2,2" />
-            <path d="M 65,100 L 130,103" stroke="#475569" strokeDasharray="2,2" />
-            <text x="95" y="77" fontSize="8" fontFamily="monospace" fill="#64748b" textAnchor="middle" fontWeight="bold">ENGINE HOOD</text>
+            <g stroke="#64748b" strokeWidth="2">
+              <rect x="245" y="62" width="92" height="42" rx="17" fill="#080d15" />
+              <rect x="665" y="62" width="92" height="42" rx="17" fill="#080d15" />
+              <rect x="245" y="316" width="92" height="42" rx="17" fill="#080d15" />
+              <rect x="665" y="316" width="92" height="42" rx="17" fill="#080d15" />
+            </g>
+            <g stroke="#334155" strokeWidth="2">
+              <circle cx="291" cy="83" r="12" />
+              <circle cx="711" cy="83" r="12" />
+              <circle cx="291" cy="337" r="12" />
+              <circle cx="711" cy="337" r="12" />
+            </g>
 
-            {/* Main Outer Body Shell */}
             <path
-              d="M 65,26 L 95,26 C 95,20 100,15 110,15 C 120,15 125,20 125,26 L 295,26 C 295,20 300,15 310,15 C 320,15 325,20 325,26 L 360,26 C 375,26 384,35 384,52 L 384,96 C 384,113 375,122 360,122 L 325,122 C 325,128 320,133 310,133 C 300,133 295,128 295,122 L 125,122 C 125,128 120,133 110,133 C 100,133 95,128 95,122 L 65,122 Z"
-              fill="#1e293b"
+              d="M148 112 C112 112 88 146 80 184 L72 210 L80 236 C88 274 112 308 148 308 H852 C888 308 912 276 920 240 L928 210 L920 180 C912 144 888 112 852 112 Z"
+              fill="url(#inspection-car-paint)"
               stroke="#94a3b8"
-              strokeWidth="1.8"
+              strokeWidth="3"
             />
+            <path d="M146 124 C117 126 102 153 94 185 L88 210 L94 235 C102 267 117 294 146 296" stroke="#38bdf8" strokeWidth="3" />
+            <path d="M854 124 C883 126 898 153 906 185 L912 210 L906 235 C898 267 883 294 854 296" stroke="#fb7185" strokeWidth="3" />
 
-            {/* Front Windshield */}
-            <path d="M 132,30 C 138,42 138,106 132,118 L 150,115 C 154,103 154,45 150,33 Z" fill="#0284c7" fillOpacity="0.25" stroke="#0284c7" />
+            <path d="M160 130 H315 Q336 210 315 290 H160 Q131 290 120 266 L106 210 L120 154 Q131 130 160 130 Z" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
+            <path d="M175 146 H294 Q310 210 294 274 H175 Q153 274 144 254 L132 210 L144 166 Q153 146 175 146 Z" stroke="#475569" strokeWidth="1.5" />
+            <path d="M185 210 H280" stroke="#64748b" strokeDasharray="5 6" />
+            <text x="219" y="202" fill="#94a3b8" fontSize="16" fontFamily="ui-monospace, monospace" textAnchor="middle">HOOD</text>
+            <text x="219" y="224" fill="#64748b" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">ENGINE BAY</text>
 
-            {/* Roof / Panoramic glass */}
-            <rect x="158" y="34" width="78" height="80" rx="5" fill="#0f172a" stroke="#64748b" strokeDasharray="3,2" />
-            <text x="197" y="77" fontSize="7" fontFamily="monospace" fill="#94a3b8" textAnchor="middle">CABIN / ROOF</text>
+            <path d="M328 132 Q346 210 328 288 H396 Q408 210 396 132 Z" fill="url(#inspection-car-glass)" stroke="#38bdf8" strokeWidth="2" />
+            <path d="M402 130 H650 V290 H402 Q416 210 402 130 Z" fill="#111d2b" stroke="#64748b" strokeWidth="2" />
+            <path d="M430 145 H625 V275 H430 Z" fill="url(#inspection-car-glass)" stroke="#38bdf8" strokeWidth="2" />
+            <path d="M527 146 V274" stroke="#64748b" strokeWidth="2" />
+            <path d="M420 210 H636" stroke="#475569" strokeDasharray="4 7" />
+            <text x="527" y="202" fill="#94a3b8" fontSize="16" fontFamily="ui-monospace, monospace" textAnchor="middle">CABIN / ROOF</text>
+            <text x="527" y="224" fill="#64748b" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">GLASS &amp; TRIM</text>
 
-            {/* Windows / Doors Outlines (Top side) */}
-            <path d="M 155,30 L 195,30 L 195,40 L 155,40 Z" fill="#0284c7" fillOpacity="0.2" stroke="#38bdf8" />
-            <path d="M 199,30 L 245,30 L 245,40 L 199,40 Z" fill="#0284c7" fillOpacity="0.2" stroke="#38bdf8" />
+            <path d="M656 132 H718 Q704 210 718 288 H656 Z" fill="url(#inspection-car-glass)" stroke="#38bdf8" strokeWidth="2" />
+            <path d="M730 130 H842 Q872 130 882 158 L894 210 L882 262 Q872 290 842 290 H730 Q744 210 730 130 Z" fill="#1e293b" stroke="#64748b" strokeWidth="2" />
+            <path d="M756 150 H832 Q851 150 860 171 L869 210 L860 249 Q851 270 832 270 H756 Z" stroke="#475569" strokeWidth="1.5" />
+            <circle cx="811" cy="210" r="27" stroke="#64748b" strokeDasharray="4 5" />
+            <circle cx="811" cy="210" r="12" stroke="#475569" />
+            <text x="811" y="214" fill="#94a3b8" fontSize="10" fontFamily="ui-monospace, monospace" textAnchor="middle">SPARE</text>
 
-            {/* Windows / Doors Outlines (Bottom side) */}
-            <path d="M 155,108 L 195,108 L 195,118 L 155,118 Z" fill="#0284c7" fillOpacity="0.2" stroke="#38bdf8" />
-            <path d="M 199,108 L 245,108 L 245,118 L 199,118 Z" fill="#0284c7" fillOpacity="0.2" stroke="#38bdf8" />
+            <path d="M395 112 V132 M650 112 V132 M395 288 V308 M650 288 V308" stroke="#94a3b8" strokeWidth="2" />
+            <path d="M398 128 V290 M652 128 V290" stroke="#475569" strokeWidth="1.5" />
+            <path d="M420 119 H505 M545 119 H628 M420 301 H505 M545 301 H628" stroke="#64748b" strokeWidth="2" />
+            <path d="M470 116 l12 6 M600 116 l12 6 M470 304 l12 -6 M600 304 l12 -6" stroke="#94a3b8" strokeWidth="2" />
 
-            {/* B-Pillar Center Divider */}
-            <line x1="197" y1="26" x2="197" y2="122" stroke="#475569" strokeWidth="1.5" />
+            <path d="M90 190 Q77 210 90 230" stroke="#38bdf8" strokeWidth="4" />
+            <path d="M910 190 Q923 210 910 230" stroke="#fb7185" strokeWidth="4" />
+            <rect x="96" y="151" width="18" height="30" rx="8" fill="#fef3c7" stroke="#fbbf24" strokeWidth="1.5" />
+            <rect x="96" y="239" width="18" height="30" rx="8" fill="#fef3c7" stroke="#fbbf24" strokeWidth="1.5" />
+            <rect x="886" y="151" width="18" height="30" rx="8" fill="#fb7185" stroke="#e11d48" strokeWidth="1.5" />
+            <rect x="886" y="239" width="18" height="30" rx="8" fill="#fb7185" stroke="#e11d48" strokeWidth="1.5" />
+            <path d="M132 118 l-16 -20 28 8 M132 302 l-16 20 28 -8 M868 118 l16 -20 -28 8 M868 302 l16 20 -28 -8" fill="#172638" stroke="#64748b" strokeWidth="2" />
 
-            {/* Rear Windshield */}
-            <path d="M 252,32 C 248,44 248,104 252,116 L 268,116 C 263,104 263,44 268,32 Z" fill="#0284c7" fillOpacity="0.25" stroke="#0284c7" />
-
-            {/* Trunk / Boot with Spare Wheel Indicator */}
-            <circle cx="318" cy="74" r="20" fill="#0f172a" stroke="#475569" strokeWidth="1.3" strokeDasharray="3,2" />
-            <circle cx="318" cy="74" r="10" fill="none" stroke="#64748b" strokeWidth="1" />
-            <text x="318" y="77" fontSize="7" fontFamily="monospace" fill="#94a3b8" textAnchor="middle" fontWeight="bold">SPARE</text>
-
-            {/* Rear Bumper & Taillights */}
-            <path d="M 382,36 C 390,42 390,106 382,112" strokeWidth="1.8" stroke="#ef4444" />
-            <rect x="372" y="32" width="6" height="10" rx="1.5" fill="#ef4444" stroke="#b91c1c" />
-            <rect x="372" y="106" width="6" height="10" rx="1.5" fill="#ef4444" stroke="#b91c1c" />
-
-            {/* 4 Wheels / Tires with rims */}
-            {/* Front Left */}
-            <rect x="98" y="10" width="24" height="14" rx="3" fill="#020617" stroke="#64748b" strokeWidth="1.5" />
-            {/* Front Right */}
-            <rect x="98" y="124" width="24" height="14" rx="3" fill="#020617" stroke="#64748b" strokeWidth="1.5" />
-            {/* Rear Left */}
-            <rect x="298" y="10" width="24" height="14" rx="3" fill="#020617" stroke="#64748b" strokeWidth="1.5" />
-            {/* Rear Right */}
-            <rect x="298" y="124" width="24" height="14" rx="3" fill="#020617" stroke="#64748b" strokeWidth="1.5" />
-
-            {/* Direction Indicator */}
-            <path d="M 20,74 L 10,74 M 14,70 L 10,74 L 14,78" stroke="#38bdf8" strokeWidth="1.5" />
-            <text x="18" y="66" fontSize="6.5" fontFamily="monospace" fill="#38bdf8" textAnchor="middle">FRONT</text>
-            <text x="404" y="76" fontSize="6.5" fontFamily="monospace" fill="#ef4444" textAnchor="middle">REAR</text>
+            <text x="36" y="200" fill="#38bdf8" fontSize="13" fontFamily="ui-monospace, monospace" fontWeight="700" textAnchor="middle">FRONT</text>
+            <text x="36" y="220" fill="#64748b" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">BONNET</text>
+            <text x="964" y="200" fill="#fb7185" fontSize="13" fontFamily="ui-monospace, monospace" fontWeight="700" textAnchor="middle">REAR</text>
+            <text x="964" y="220" fill="#64748b" fontSize="11" fontFamily="ui-monospace, monospace" textAnchor="middle">BOOT</text>
           </g>
-        </svg>
 
-        {/* Dynamic Placed Markers */}
-        {markers.map((marker, index) => {
-          const cfg = DEFECT_CONFIG[marker.type] || DEFECT_CONFIG.DENT;
-          return (
-            <div
-              key={marker.id || index}
-              onClick={(e) => handleRemoveMarker(marker.id, e)}
-              onMouseEnter={() => setHoveredMarker(marker.id)}
-              onMouseLeave={() => setHoveredMarker(null)}
-              className="defect-marker-badge absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 transition-transform hover:scale-125"
-              style={{
-                left: `${marker.x}%`,
-                top: `${marker.y}%`,
-              }}
-              title={readOnly ? `${marker.type}` : `Click to delete: ${marker.type}`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg ${cfg.bg} ring-2 ring-white/80 animate-pulse`}
+          <path
+            data-inspection-surface
+            d="M148 112 C112 112 88 146 80 184 L72 210 L80 236 C88 274 112 308 148 308 H852 C888 308 912 276 920 240 L928 210 L920 180 C912 144 888 112 852 112 Z"
+            fill="transparent"
+            pointerEvents="all"
+            className={canEdit ? 'cursor-crosshair' : 'cursor-default'}
+          />
+          {[
+            { x: 245, y: 62 },
+            { x: 665, y: 62 },
+            { x: 245, y: 316 },
+            { x: 665, y: 316 },
+          ].map((wheel) => (
+            <rect
+              key={`${wheel.x}-${wheel.y}`}
+              data-inspection-surface
+              x={wheel.x}
+              y={wheel.y}
+              width="92"
+              height="42"
+              rx="17"
+              fill="transparent"
+              pointerEvents="all"
+              className={canEdit ? 'cursor-crosshair' : 'cursor-default'}
+            />
+          ))}
+
+          {markers.map((marker, index) => {
+            const config = DEFECT_CONFIG[marker.type] || DEFECT_CONFIG.DENT;
+            const x =
+              VEHICLE_BOUNDS.left +
+              (clamp(marker.x, 0, 100) / 100) * (VEHICLE_BOUNDS.right - VEHICLE_BOUNDS.left);
+            const y =
+              VEHICLE_BOUNDS.top +
+              (clamp(marker.y, 0, 100) / 100) * (VEHICLE_BOUNDS.bottom - VEHICLE_BOUNDS.top);
+
+            return (
+              <g
+                key={marker.id || index}
+                role={readOnly ? undefined : 'button'}
+                tabIndex={readOnly ? undefined : 0}
+                aria-label={readOnly ? `${config.label} marker` : `Remove ${config.label} marker`}
+                onClick={(event) => handleRemoveMarker(marker.id, event)}
+                onKeyDown={(event) => {
+                  if (readOnly || (event.key !== 'Enter' && event.key !== ' ')) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleRemoveMarker(marker.id);
+                }}
+                style={{ cursor: readOnly ? 'default' : 'pointer' }}
               >
-                {cfg.badge}
-              </div>
-
-              {hoveredMarker === marker.id && !readOnly && (
-                <div className="absolute left-1/2 -translate-x-1/2 -top-7 px-2 py-0.5 rounded bg-black/90 text-white text-[10px] whitespace-nowrap shadow-md pointer-events-none z-20 font-mono">
-                  Delete {marker.type}
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Empty state hint */}
-        {markers.length === 0 && !readOnly && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-900/90 rounded-full border border-slate-700/80 text-[11px] text-slate-400 flex items-center gap-1.5 shadow pointer-events-none">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Tap anywhere on the car to record damage locations</span>
-          </div>
-        )}
+                <title>{readOnly ? config.label : `Remove ${config.label} marker`}</title>
+                <circle cx={x} cy={y} r="17" fill={config.color} fillOpacity="0.95" stroke="#f8fafc" strokeWidth="2.5" />
+                <circle cx={x} cy={y} r="21" fill="none" stroke={config.color} strokeOpacity="0.35" strokeWidth="5" />
+                <text
+                  x={x}
+                  y={y + 4}
+                  fill="white"
+                  fontSize="13"
+                  fontWeight="800"
+                  fontFamily="ui-sans-serif, system-ui, sans-serif"
+                  textAnchor="middle"
+                  pointerEvents="none"
+                >
+                  {config.badge}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
 
-      {/* Defect Legend Bar */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 mt-2 px-1">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> [D] Dent ({counts.DENT})
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> [S] Scratch ({counts.SCRATCH})
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> [C] Chip ({counts.CHIP})
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> [R] Rust ({counts.RUST})
-          </span>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-1 text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {(Object.keys(DEFECT_CONFIG) as DefectType[]).map((type) => (
+            <span key={type} className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: DEFECT_CONFIG[type].color }} />
+              {DEFECT_CONFIG[type].label} ({counts[type]})
+            </span>
+          ))}
+          {canEdit && (
+            <span className="inline-flex items-center gap-1.5 text-slate-500">
+              <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+              Click the vehicle body or a wheel to place a marker; click a marker to remove it.
+            </span>
+          )}
         </div>
-        <div className="text-[11px] text-slate-500 font-mono">
-          Total Recorded Defects: {markers.length}
-        </div>
+        <span className="font-mono text-slate-500">Total defects: {markers.length}</span>
       </div>
     </div>
   );

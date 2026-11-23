@@ -191,8 +191,8 @@
                 </div>
 
                 <div class="auth-form-group">
-                    <label for="authPin">8-Digit PIN</label>
-                    <input type="password" id="authPin" class="auth-input" placeholder="Enter your 8-digit PIN" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" autocomplete="off" required>
+                    <label for="authPassword">12-Character Password</label>
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Enter your 12-character password" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}" minlength="12" maxlength="12" autocomplete="current-password" required>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; font-size:12px;">
