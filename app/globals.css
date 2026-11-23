@@ -15,6 +15,51 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 50-inch lounge displays (1920x1080 and similar 16:9 TVs) */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .tv-lounge > header {
+    min-height: 88px;
+    padding: 12px 34px;
+  }
+
+  .tv-lounge > header h1 {
+    font-size: 18px;
+  }
+
+  .tv-lounge > header p {
+    font-size: 12px;
+  }
+
+  .tv-lounge > main {
+    grid-template-columns: minmax(0, 42%) minmax(0, 58%);
+  }
+
+  .tv-lounge > main > section:last-child {
+    min-height: 0;
+  }
+
+  .tv-lounge > main > section:last-child > div:nth-of-type(2) {
+    padding: 16px 20px;
+  }
+
+  .tv-lounge article {
+    min-height: 118px;
+  }
+
+  .tv-lounge article h3 {
+    font-size: 18px;
+  }
+
+  .tv-lounge article span {
+    font-size: 12px;
+  }
+
+  .tv-lounge footer {
+    min-height: 46px;
+    font-size: 12px;
+  }
+}
+
 .print-page-frame {
   box-sizing: border-box;
   width: 210mm;

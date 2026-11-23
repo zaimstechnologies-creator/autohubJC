@@ -267,7 +267,7 @@ export default function LoungeTVPage() {
   const inProgressCount = displayQueue.filter((card) => card.status === 'IN_PROGRESS').length;
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
+    <div className="tv-lounge flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 lg:min-h-[76px] lg:flex-nowrap lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white p-1 shadow-sm sm:h-12 sm:w-[74px]">
