@@ -105,13 +105,13 @@ Follow the 3 prompts and your app is live!
 The login screen is available at `/login`. Configure these values in `.env.local` for development and in the deployment's secret settings for production:
 
 - `AUTH_USERNAME`: administrator account name.
-- `AUTH_PASSWORD_HASH`: generated using `node scripts/hash-password.cjs` (the password is entered without echo and only the scrypt hash is printed).
+- `AUTH_PASSWORD_HASH`: generated using `node scripts/hash-password.cjs` (enter an 8-digit PIN without echo; only its scrypt hash is printed). The existing variable name is retained for deployment compatibility.
 - `AUTH_SECRET`: a random secret with at least 32 bytes. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 - `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase key used by private API routes. Never prefix it with `NEXT_PUBLIC_`.
 
 Do not commit `.env.local` or share these secrets. `SUPABASE_SERVICE_ROLE_KEY` is only used on the server. Apply [supabase/schema.sql](./supabase/schema.sql) to remove the previous unrestricted database policies and restrict the tracking function to server-side use.
 
-Sessions use an HttpOnly, SameSite=Strict cookie. They expire after 8 hours, or 14 days when “Stay signed in” is selected. There is no refresh token for this single administrator account; sign in again after expiration. Logout clears the browser cookie; rotate `AUTH_SECRET` to invalidate all issued sessions. Configure login rate limiting at the hosting edge before production deployment.
+Sessions use an HttpOnly, SameSite=Strict cookie. They expire after 8 hours, or 14 days when “Stay signed in” is selected. There is no refresh token for this single administrator account; sign in again after expiration. Logout clears the browser cookie; rotate `AUTH_SECRET` to invalidate all issued sessions. Because an 8-digit PIN has less entropy than a password, configure login rate limiting at the hosting edge before production deployment. After switching to a PIN, generate a new `AUTH_PASSWORD_HASH` and update it in `.env.local` and the deployment's secret settings.
 
 ## 💻 Local Testing & Development
 

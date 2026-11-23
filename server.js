@@ -206,10 +206,10 @@ function parsePasswordHash(value) {
     }
 }
 
-function verifyAdminPassword(password, passwordHash) {
+function verifyAdminPin(pin, passwordHash) {
     const parsedHash = parsePasswordHash(passwordHash);
     if (!parsedHash) return false;
-    const derivedHash = crypto.scryptSync(password, parsedHash.salt, 32, {
+    const derivedHash = crypto.scryptSync(pin, parsedHash.salt, 32, {
         N: 16384,
         r: 8,
         p: 1,
@@ -287,7 +287,7 @@ function requireAdminAuth(req, res, next) {
 
 // 1. Admin Sign In (Strict Credential Verification)
 app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
-    const { username, password } = req.body || {};
+    const { username, pin } = req.body || {};
     const creds = getAdminCredentials();
 
     if (!creds) {
@@ -299,12 +299,11 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
     if (
         typeof username === 'string' &&
         username.length <= 128 &&
-        typeof password === 'string' &&
-        password.length > 0 &&
-        password.length <= 1024
+        typeof pin === 'string' &&
+        /^\d{8}$/.test(pin)
     ) {
         try {
-            if (username.trim() === creds.username && verifyAdminPassword(password, creds.passwordHash)) {
+            if (username.trim() === creds.username && verifyAdminPin(pin, creds.passwordHash)) {
                 const tokenData = generateSignedToken(creds.username);
                 return res.json({
                     success: true,
@@ -325,7 +324,7 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
 
     return res.status(401).json({
         success: false,
-        error: 'Invalid admin username or password. Access denied.'
+        error: 'Invalid admin username or PIN. Access denied.'
     });
 });
 

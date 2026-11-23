@@ -45,7 +45,7 @@ export function isAdminAuthConfigured(): boolean {
 
 export async function verifyAdminCredentials(
   username: string,
-  password: string
+  pin: string
 ): Promise<boolean> {
   const configuredUsername = process.env.AUTH_USERNAME?.trim();
   const passwordHash = parsePasswordHash(process.env.AUTH_PASSWORD_HASH);
@@ -53,7 +53,7 @@ export async function verifyAdminCredentials(
 
   const derivedHash = await new Promise<Buffer>((resolve, reject) => {
     nodeScrypt(
-      password,
+      pin,
       passwordHash.salt,
       HASH_BYTES,
       {

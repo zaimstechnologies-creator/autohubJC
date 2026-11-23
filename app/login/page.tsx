@@ -25,7 +25,7 @@ function getAppRedirect(): string {
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +40,7 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ username, password, rememberMe }),
+        body: JSON.stringify({ username, pin, rememberMe }),
       });
       const result = await response.json();
 
@@ -103,21 +103,24 @@ export default function LoginPage() {
 
           <div>
             <label
-              htmlFor="password"
+              htmlFor="pin"
               className="mb-1.5 block text-[12px] font-extrabold tracking-wide text-slate-800"
             >
-              PASSWORD
+              8-DIGIT PIN
             </label>
             <input
-              id="password"
-              name="password"
+              id="pin"
+              name="pin"
               type="password"
-              autoComplete="current-password"
+              inputMode="numeric"
+              pattern="[0-9]{8}"
+              autoComplete="off"
               required
-              maxLength={1024}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter admin password"
+              minLength={8}
+              maxLength={8}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+              placeholder="Enter your 8-digit PIN"
               className="h-12 w-full rounded-[10px] border border-slate-300 px-4 text-[14px] outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20"
             />
           </div>

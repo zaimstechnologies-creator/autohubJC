@@ -6,7 +6,7 @@ const SCRYPT_PARALLELIZATION = 1;
 const KEY_LENGTH = 32;
 
 if (!process.stdin.isTTY) {
-  console.error('Run this command in an interactive terminal so the password is not echoed.');
+  console.error('Run this command in an interactive terminal so the PIN is not echoed.');
   process.exit(1);
 }
 
@@ -14,9 +14,9 @@ const input = process.stdin;
 input.setRawMode(true);
 input.setEncoding('utf8');
 input.resume();
-process.stdout.write('Enter an admin password (12+ characters): ');
+process.stdout.write('Enter an 8-digit admin PIN: ');
 
-let password = '';
+let pin = '';
 input.on('data', (chunk) => {
   for (const character of chunk) {
     if (character === '\u0003') {
@@ -29,13 +29,13 @@ input.on('data', (chunk) => {
       input.pause();
       process.stdout.write('\n');
 
-      if (password.length < 12) {
-        console.error('Password must contain at least 12 characters.');
+      if (!/^\d{8}$/.test(pin)) {
+        console.error('PIN must contain exactly 8 digits.');
         process.exit(1);
       }
 
       const salt = randomBytes(16);
-      const hash = scryptSync(password, salt, KEY_LENGTH, {
+      const hash = scryptSync(pin, salt, KEY_LENGTH, {
         N: SCRYPT_COST,
         r: SCRYPT_BLOCK_SIZE,
         p: SCRYPT_PARALLELIZATION,
@@ -47,9 +47,9 @@ input.on('data', (chunk) => {
       process.exit(0);
     }
     if (character === '\u0008' || character === '\u007f') {
-      password = password.slice(0, -1);
-    } else {
-      password += character;
+      pin = pin.slice(0, -1);
+    } else if (/\d/.test(character)) {
+      pin += character;
     }
   }
 });

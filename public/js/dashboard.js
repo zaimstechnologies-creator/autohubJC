@@ -86,9 +86,8 @@ function showAdminLogin() {
     if (authScreen) authScreen.style.display = 'flex';
     if (mainWrapper) mainWrapper.style.display = 'none';
 
-    // Clear password input on login screen
-    const passInput = document.getElementById('authPassword');
-    if (passInput) passInput.value = '';
+    const pinInput = document.getElementById('authPin');
+    if (pinInput) pinInput.value = '';
 }
 
 function showAuthenticatedUi(userName) {
@@ -121,16 +120,16 @@ async function handleAdminLoginSubmit(e) {
     }
 
     const usernameInput = document.getElementById('authUsername');
-    const passwordInput = document.getElementById('authPassword');
+    const pinInput = document.getElementById('authPin');
     const rememberMe = document.getElementById('authRememberMe')?.checked;
     const submitBtn = document.getElementById('authSubmitBtn');
 
     const username = (usernameInput?.value || '').trim();
-    const password = (passwordInput?.value || '').trim();
+    const pin = (pinInput?.value || '').trim();
 
-    if (!username || !password) {
+    if (!username || !/^\d{8}$/.test(pin)) {
         if (errBox) {
-            errBox.textContent = 'Please enter both username and password.';
+            errBox.textContent = 'Please enter your username and 8-digit PIN.';
             errBox.style.display = 'block';
         }
         return;
@@ -145,7 +144,7 @@ async function handleAdminLoginSubmit(e) {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, pin })
         });
 
         const data = await res.json();
@@ -167,18 +166,18 @@ async function handleAdminLoginSubmit(e) {
                 loginTime: Date.now()
             }));
 
-            if (passwordInput) passwordInput.value = '';
+            if (pinInput) pinInput.value = '';
 
             showAuthenticatedUi(data.user || username);
             await refreshDashboard();
         } else {
             if (errBox) {
-                errBox.textContent = data.error || 'Access Denied: Invalid username or password.';
+                errBox.textContent = data.error || 'Access Denied: Invalid username or PIN.';
                 errBox.style.display = 'block';
             }
-            if (passwordInput) {
-                passwordInput.value = '';
-                passwordInput.focus();
+            if (pinInput) {
+                pinInput.value = '';
+                pinInput.focus();
             }
         }
     } catch (err) {

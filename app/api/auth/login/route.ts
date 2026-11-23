@@ -41,18 +41,17 @@ export async function POST(request: NextRequest) {
   const credentials = body as Record<string, unknown>;
   if (
     typeof credentials.username !== 'string' ||
-    typeof credentials.password !== 'string' ||
+    typeof credentials.pin !== 'string' ||
     credentials.username.trim().length === 0 ||
     credentials.username.length > 128 ||
-    credentials.password.length === 0 ||
-    credentials.password.length > 1024
+    !/^\d{8}$/.test(credentials.pin)
   ) {
-    return NextResponse.json({ error: 'Invalid username or password.' }, { status: 400 });
+    return NextResponse.json({ error: 'Enter your username and 8-digit PIN.' }, { status: 400 });
   }
 
-  if (!(await verifyAdminCredentials(credentials.username, credentials.password))) {
+  if (!(await verifyAdminCredentials(credentials.username, credentials.pin))) {
     return NextResponse.json(
-      { error: 'Invalid username or password.' },
+      { error: 'Invalid username or PIN.' },
       { status: 401, headers: { 'Cache-Control': 'no-store' } }
     );
   }
