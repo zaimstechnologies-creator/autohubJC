@@ -229,7 +229,7 @@ function printActiveJobCard() {
     if (activeCard && window.printJobCardNative) {
         window.printJobCardNative(activeCard);
     } else {
-        alert('Please save the job card first.');
+        showToast('Please save the job card first.', 'error');
     }
 }
 
@@ -237,26 +237,8 @@ function downloadActiveJobCardPdf() {
     if (activeCard && window.downloadJobCardPdf) {
         window.downloadJobCardPdf(activeCard);
     } else {
-        alert('Please save the job card first.');
+        showToast('Please save the job card first.', 'error');
     }
-}
-
-// Non-blocking Toast notification
-function showToast(msg) {
-    let toast = document.getElementById('hubGlobalToast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'hubGlobalToast';
-        toast.style.cssText = 'position:fixed; bottom:24px; right:24px; background:#162544; color:#fff; border-left:4px solid #10b981; padding:14px 20px; border-radius:8px; font-weight:700; font-size:13px; box-shadow:0 10px 30px rgba(0,0,0,0.3); z-index:99999; transition:all 0.3s ease;';
-        document.body.appendChild(toast);
-    }
-    toast.textContent = msg;
-    toast.style.display = 'block';
-    toast.style.opacity = '1';
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => { toast.style.display = 'none'; }, 300);
-    }, 3500);
 }
 
 // ==========================================================================
@@ -308,7 +290,7 @@ function toggleCustomerConcernMic() {
     if (!speechRecognizer) {
         initSpeechRecognition();
         if (!speechRecognizer) {
-            alert('Voice dictation requires Google Chrome, Microsoft Edge, or a browser with microphone permission enabled.');
+            showToast('Voice dictation requires Chrome, Edge, or another browser with microphone permission enabled.', 'error');
             return;
         }
     }
@@ -354,7 +336,7 @@ async function runGeminiDiagnosis() {
     const aiStatus = document.getElementById('geminiAiStatus');
 
     if (!concern) {
-        alert('Please enter or speak the customer concern first before triggering AI Diagnosis.');
+        showToast('Please enter or speak the customer concern first before triggering AI Diagnosis.', 'error');
         document.getElementById('customerConcern')?.focus();
         return;
     }
@@ -371,21 +353,15 @@ async function runGeminiDiagnosis() {
     }
 
     try {
-        const defaultKey = (typeof atob !== 'undefined') ? atob('QVEuQWI4Uk42Sm9YTW1fS3NkNlVxMVRXR3c2aGozOUEyRDNTb09hUVNhUkNMXzhueTBxUQ==') : '';
-        const apiKey = localStorage.getItem('al_shaheen_gemini_key') || defaultKey;
         let aiResult = null;
         let sourceText = '';
 
-        // 1. Try local server proxy
+        // Use the authenticated server proxy; API credentials remain server-side.
         try {
-            const token = localStorage.getItem('al_shaheen_staff_token') || sessionStorage.getItem('al_shaheen_staff_token') || '';
             const res = await fetch('/api/ai/diagnose', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
-                },
-                body: JSON.stringify({ concern, makeModel, mileage, apiKey })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concern, makeModel, mileage })
             });
             if (res.ok) {
                 const json = await res.json();
@@ -395,51 +371,10 @@ async function runGeminiDiagnosis() {
                 }
             }
         } catch (serverErr) {
-            console.log('Local server proxy unreachable, attempting direct client AI...', serverErr.message);
+            console.warn('AI diagnosis server proxy is unavailable:', serverErr.message);
         }
 
-        // 2. Direct Gemini API call if server proxy didn't respond
-        if (!aiResult && apiKey) {
-            try {
-                const prompt = `You are the Chief Master Automotive Diagnostician at Al Shaheen Auto Hub, a premium high-tech workshop on Bedian Road DHA Lahore, Pakistan.
-Analyze this vehicle complaint:
-Vehicle: ${makeModel} (${mileage})
-Customer Concern / Reported Symptoms: "${concern}"
-
-Understand mechanical symptoms described in Pakistani Roman Urdu / English:
-- "Gari aik trf khud ko khainchti hai / pulling": front wheel alignment camber/caster out, worn tie-rod ends, control arm bushings.
-- "Jhatky ly kr chlti hai / jerking": engine misfire, spark plugs fouled, fuel injector clogging, throttle body carbon buildup.
-- "3rd gear phas jata hai / gear shift masla": manual gearbox 3rd gear synchronizer brass ring worn/chipped, shifter linkage bushings loose, 75W-90 gear oil degraded.
-- "Tik tik awaz / khada sound": outer CV joint axle wear, stabilizer sway bar links.
-
-Return STRICTLY a JSON object with this exact schema:
-{
-  "workToBeDone": "1. ...\\n2. ...\\n3. ...",
-  "recommendedParts": [
-    { "desc": "Part Description", "qty": 1, "estimatedRate": 4500 }
-  ],
-  "estimatedLabour": 6500
-}`;
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const text = data.candidates[0].content.parts[0].text;
-                    aiResult = JSON.parse(text);
-                    sourceText = 'Google Gemini AI (Live)';
-                }
-            } catch (directAiErr) {
-                console.warn('Direct Gemini call failed:', directAiErr.message);
-            }
-        }
-
-        // 3. Expert Knowledge System Fallback (Handles Roman Urdu & Technical Symptoms)
+        // Fall back to the local knowledge base when the server AI service is unavailable.
         if (!aiResult) {
             aiResult = generateClientAutomotiveDiagnosis(concern, makeModel);
             sourceText = 'Al Shaheen Master Diagnostic Knowledge Base';
@@ -983,4 +918,3 @@ window.undoDamageMarker = undoDamageMarker;
 window.clearDamageMarkers = clearDamageMarkers;
 window.deleteActiveJobCard = deleteActiveJobCard;
 window.closeActiveJobCardPayment = closeActiveJobCardPayment;
-window.showToast = showToast;

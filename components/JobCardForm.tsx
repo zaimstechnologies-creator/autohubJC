@@ -21,7 +21,6 @@ import {
   Printer,
   Plus,
   Trash2,
-  CheckCircle2,
   AlertTriangle,
   ArrowLeft,
   DollarSign,
@@ -32,6 +31,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface JobCardFormProps {
   initialData?: JobCard | null;
@@ -151,7 +151,6 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           null
   );
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   // Recalculate financial balances whenever parts or rates change
   useEffect(() => {
@@ -264,7 +263,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
   // Run Gemini AI Diagnosis
   const handleRunAIDiagnosis = async () => {
     if (!formData.customer_concern || formData.customer_concern.trim().length === 0) {
-      alert('Please enter or dictate the Customer Concern first.');
+      toast.error('Please enter or dictate the Customer Concern first.');
       return;
     }
 
@@ -326,8 +325,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         ),
         itemized_parts: newParts,
       }));
+      toast.success('AI diagnosis completed.');
     } catch (err: any) {
-      alert(`AI Diagnosis Notice: ${err.message}`);
+      toast.error(`AI diagnosis failed: ${err.message}`);
     } finally {
       setAiLoading(false);
     }
@@ -387,12 +387,11 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
   // Save handler
   const handleSave = async (customStatus?: JobCard['status'], printAfterSave = false) => {
     if (!formData.customer_name || !formData.plate_number) {
-      alert('Please fill in at least Customer Name and Vehicle Plate Number.');
+      toast.error('Please fill in at least Customer Name and Vehicle Plate Number.');
       return;
     }
 
     setSaving(true);
-    setSaveStatus(null);
     try {
       const payload: JobCard = {
         ...formData,
@@ -411,15 +410,18 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       if (!res.ok) throw new Error(json.error || 'Save failed');
 
       setFormData(json.data);
-      setSaveStatus('Job Card saved successfully!');
+      toast.success(
+        customStatus === 'CLOSED_PAID'
+          ? 'Job card closed and payment recorded.'
+          : 'Job card saved successfully.'
+      );
       if (printAfterSave) {
         if (onPrint) onPrint(json.data);
       } else if (onSaveSuccess) {
         onSaveSuccess(json.data);
       }
-      setTimeout(() => setSaveStatus(null), 3500);
     } catch (err: any) {
-      alert(`Error saving job card: ${err.message}`);
+      toast.error(`Error saving job card: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -460,13 +462,6 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         </div>
 
         <div className="flex items-center gap-2.5">
-          {saveStatus && (
-            <div className="text-xs text-emerald-400 font-medium flex items-center gap-1 bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-800">
-              <CheckCircle2 className="w-4 h-4" />
-              {saveStatus}
-            </div>
-          )}
-
           <button
             type="button"
             onClick={() => {
@@ -477,7 +472,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   handleSave(undefined, true);
                 }
               } else {
-                alert('Please save the job card before printing.');
+                toast.error('Please save the job card before printing.');
               }
             }}
             className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition shadow"

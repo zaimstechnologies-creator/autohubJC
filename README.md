@@ -50,6 +50,7 @@ A comprehensive, screen-responsive workshop management application built for **A
 
 ### 5. 🤖 Gemini AI Diagnostics & Tablet Stylus Job Cards
 - Built-in Google Gemini AI automotive diagnosis engine (Free Tier compatible).
+- Configure `GEMINI_API_KEY` only as a server-side deployment secret; never enter it in browser settings or commit it to source control.
 - AI repair instructions follow the concern's language: Roman Urdu/Hinglish or English. Advisors can switch the explanation between Roman Urdu and English.
 - Vector car inspection schematic with tire tread depth ($mm$) and touch damage markings (Dent, Scratch, Chips, Rust).
 - Stylus signature pads for Customer Approval and Service Incharge.

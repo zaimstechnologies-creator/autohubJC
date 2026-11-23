@@ -24,6 +24,8 @@ install_git.ps1
 config.json
 .env*.local
 .env
+/data/revoked-sessions.json
+/data/revoked-sessions.json.*.tmp
 
 # typescript
 *.tsbuildinfo

@@ -1,7 +1,24 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
+import { toast } from 'sonner';
+
+const PASSWORD_PATTERN =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}$/;
+
+function getUsernameError(value: string): string | undefined {
+  if (!value.trim()) return 'Enter your admin username.';
+  if (value.length > 128) return 'Username must be 128 characters or fewer.';
+}
+
+function getPasswordError(value: string): string | undefined {
+  if (!value) return 'Enter your password.';
+  if (!PASSWORD_PATTERN.test(value)) {
+    return 'Use exactly 12 characters with uppercase, lowercase, a number, and a symbol. No spaces.';
+  }
+}
 
 function getAppRedirect(): string {
   const requested = new URLSearchParams(window.location.search).get('next');
@@ -24,15 +41,32 @@ function getAppRedirect(): string {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [credentialsError, setCredentialsError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
+  const [credentialsInvalid, setCredentialsInvalid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const usernameInvalid = Boolean(fieldErrors.username || credentialsInvalid);
+  const passwordInvalid = Boolean(fieldErrors.password || credentialsInvalid);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError('');
+    setCredentialsError('');
+    setCredentialsInvalid(false);
+    const nextFieldErrors = {
+      username: getUsernameError(username),
+      password: getPasswordError(password),
+    };
+    setFieldErrors(nextFieldErrors);
+    const validationError = nextFieldErrors.username || nextFieldErrors.password;
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -45,13 +79,30 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || 'Unable to sign in. Please try again.');
+        if (response.status === 401) {
+          const message = 'Username or password is incorrect.';
+          setCredentialsInvalid(true);
+          setCredentialsError(message);
+          toast.error(message);
+          return;
+        }
+        if (response.status === 400) {
+          const message = result.error || getPasswordError(password) || 'Invalid password.';
+          setFieldErrors((current) => ({
+            ...current,
+            password: message,
+          }));
+          toast.error(message);
+          return;
+        }
+        toast.error(result.error || 'Unable to sign in. Please try again.');
         return;
       }
 
-      window.location.replace(getAppRedirect());
+      toast.success('Signed in successfully.');
+      router.replace(getAppRedirect());
     } catch {
-      setError('Unable to connect. Check your connection and try again.');
+      toast.error('Unable to connect. Check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -79,11 +130,13 @@ export default function LoginPage() {
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="mb-1.5 block text-[12px] font-extrabold tracking-wide text-slate-800"
+              className={`mb-1.5 block text-[12px] font-extrabold tracking-wide ${
+                usernameInvalid ? 'text-red-700' : 'text-slate-800'
+              }`}
             >
               ADMIN USERNAME
             </label>
@@ -92,19 +145,48 @@ export default function LoginPage() {
               name="username"
               type="text"
               autoComplete="username"
-              required
-              maxLength={128}
+              aria-required="true"
+              aria-invalid={usernameInvalid}
+              aria-describedby={
+                fieldErrors.username
+                  ? 'username-error'
+                  : credentialsInvalid
+                    ? 'credentials-error'
+                    : undefined
+              }
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => {
+                setUsername(event.target.value);
+                setFieldErrors({});
+                setCredentialsInvalid(false);
+                setCredentialsError('');
+              }}
+              onBlur={() =>
+                setFieldErrors((current) => ({
+                  ...current,
+                  username: getUsernameError(username),
+                }))
+              }
               placeholder="Enter admin username"
-              className="h-12 w-full rounded-[10px] border border-slate-300 px-4 text-[14px] outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20"
+              className={`h-12 w-full rounded-[10px] border px-4 text-[14px] outline-none transition placeholder:text-slate-400 ${
+                usernameInvalid
+                  ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-600/20'
+                  : 'border-slate-300 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20'
+              }`}
             />
+            {fieldErrors.username && (
+              <p id="username-error" className="mt-1.5 text-xs text-red-600">
+                {fieldErrors.username}
+              </p>
+            )}
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block text-[12px] font-extrabold tracking-wide text-slate-800"
+              className={`mb-1.5 block text-[12px] font-extrabold tracking-wide ${
+                passwordInvalid ? 'text-red-700' : 'text-slate-800'
+              }`}
             >
               PASSWORD
             </label>
@@ -113,17 +195,37 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
-                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}"
                 autoComplete="current-password"
                 autoCapitalize="none"
                 spellCheck={false}
-                required
-                minLength={12}
-                maxLength={12}
+                aria-required="true"
+                aria-invalid={passwordInvalid}
+                aria-describedby={
+                  fieldErrors.password
+                    ? 'password-error'
+                    : credentialsInvalid
+                      ? 'credentials-error'
+                      : undefined
+                }
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setFieldErrors({});
+                  setCredentialsInvalid(false);
+                  setCredentialsError('');
+                }}
+                onBlur={() =>
+                  setFieldErrors((current) => ({
+                    ...current,
+                    password: getPasswordError(password),
+                  }))
+                }
                 placeholder="Enter your 12-character password"
-                className="h-12 w-full rounded-[10px] border border-slate-300 px-4 pr-12 text-[14px] outline-none transition placeholder:text-slate-400 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20"
+                className={`h-12 w-full rounded-[10px] border px-4 pr-12 text-[14px] outline-none transition placeholder:text-slate-400 ${
+                  passwordInvalid
+                    ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-600/20'
+                    : 'border-slate-300 focus:border-sky-600 focus:ring-2 focus:ring-sky-600/20'
+                }`}
               />
               <button
                 type="button"
@@ -139,16 +241,16 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+            {fieldErrors.password ? (
+              <p id="password-error" className="mt-1.5 text-xs text-red-600">
+                {fieldErrors.password}
+              </p>
+            ) : credentialsError ? (
+              <p id="credentials-error" role="alert" className="mt-1.5 text-xs text-red-600">
+                {credentialsError}
+              </p>
+            ) : null}
           </div>
-
-          {error && (
-            <p
-              role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-            >
-              {error}
-            </p>
-          )}
 
           <button
             type="submit"

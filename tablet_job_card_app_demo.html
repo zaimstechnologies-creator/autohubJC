@@ -295,7 +295,7 @@
         </div>
         <div style="display:flex; gap:8px;">
             <button class="btn btn-navy" onclick="clearCar()">↺ Clear Car Markings</button>
-            <button class="btn btn-red" onclick="window.open('job_card_al_shaheen.html', '_blank')">🖨️ View &amp; Print A4 Job Card</button>
+            <button class="btn btn-red" onclick="openPrintJobCard()">🖨️ View &amp; Print A4 Job Card</button>
         </div>
     </div>
 
@@ -310,11 +310,11 @@
             <div class="grid-3">
                 <div class="input-group">
                     <label>Vehicle Plate No (نمبر پلیٹ)</label>
-                    <input type="text" value="LEA-21-4890" style="font-size: 15px; font-weight: 800; color: var(--navy);">
+                    <input id="vehiclePlateInput" type="text" value="LEA-21-4890" style="font-size: 15px; font-weight: 800; color: var(--navy);">
                 </div>
                 <div class="input-group">
                     <label>Customer Name</label>
-                    <input type="text" value="Muhammad Ali Khan">
+                    <input id="customerNameInput" type="text" value="Muhammad Ali Khan">
                 </div>
                 <div class="input-group">
                     <label>Phone / WhatsApp</label>
@@ -455,6 +455,14 @@
     </div>
 
     <script>
+        function openPrintJobCard() {
+            const params = new URLSearchParams({
+                customer: document.getElementById('customerNameInput').value.trim(),
+                plate: document.getElementById('vehiclePlateInput').value.trim()
+            });
+            window.open(`job_card_al_shaheen.html?${params.toString()}`, '_blank');
+        }
+
         function toggleChip(el) {
             el.classList.toggle('active');
             const chk = el.querySelector('.chk');

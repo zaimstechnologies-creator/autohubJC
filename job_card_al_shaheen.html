@@ -1221,6 +1221,25 @@
             </div>
         </div>
     </div>
+    <script>
+        function safeFilenamePart(value) {
+            return (value || '')
+                .normalize('NFKC')
+                .trim()
+                .replace(/[\u0000-\u001f<>:"\/\\|?*]/g, '-')
+                .replace(/\s+/g, '_')
+                .replace(/[-_]{2,}/g, '_')
+                .replace(/^[._ -]+|[._ -]+$/g, '')
+                .slice(0, 40);
+        }
 
+        const printParams = new URLSearchParams(window.location.search);
+        const printIdentity = [
+            safeFilenamePart(printParams.get('customer')),
+            safeFilenamePart(printParams.get('plate'))
+        ].filter(Boolean).join('_');
+        const jobNumber = document.querySelector('.job-num-badge')?.textContent.trim();
+        document.title = `JobCard_${printIdentity || safeFilenamePart(jobNumber) || 'New'}`;
+    </script>
 </body>
 </html>

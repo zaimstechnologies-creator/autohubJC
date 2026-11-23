@@ -89,9 +89,8 @@ export async function runAIDiagnosis(params: {
   variant?: string;
   mileage_km?: number;
   customer_concern: string;
-  apiKeyOverride?: string;
 }): Promise<AIDiagnosisResult> {
-  const apiKey = params.apiKeyOverride || process.env.GEMINI_API_KEY || '';
+  const apiKey = process.env.GEMINI_API_KEY || '';
   const responseLanguage = detectDiagnosisLanguage(params.customer_concern);
 
   if (apiKey) {

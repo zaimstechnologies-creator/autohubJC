@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { JobCard } from '@/types';
+import { getJobCardPrintTitle } from '@/lib/jobCardPrintName';
 import JobCardForm from '@/components/JobCardForm';
 import PrintJobCardA4 from '@/components/PrintJobCardA4';
 import AuthSessionButton from '@/components/AuthSessionButton';
@@ -19,9 +20,16 @@ export default function JobCardDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isPrintMode, setIsPrintMode] = useState(false);
   const autoPrintJobId = useRef<string | null>(null);
+  const originalDocumentTitle = useRef<string | null>(null);
 
   useEffect(() => {
-    const handleAfterPrint = () => setIsPrintMode(false);
+    const handleAfterPrint = () => {
+      setIsPrintMode(false);
+      if (originalDocumentTitle.current !== null) {
+        document.title = originalDocumentTitle.current;
+        originalDocumentTitle.current = null;
+      }
+    };
     window.addEventListener('afterprint', handleAfterPrint);
     return () => window.removeEventListener('afterprint', handleAfterPrint);
   }, []);
@@ -38,7 +46,7 @@ export default function JobCardDetailPage() {
           if (searchParams.get('print') === '1' && autoPrintJobId.current !== id) {
             autoPrintJobId.current = id;
             setIsPrintMode(true);
-            setTimeout(() => printAfterRender(), 500);
+            setTimeout(() => printAfterRender(json.data), 500);
           }
         }
       } catch (err) {
@@ -51,9 +59,12 @@ export default function JobCardDetailPage() {
     fetchCard();
   }, [id]);
 
-  const handlePrint = () => {
+  const handlePrint = (jobCard?: JobCard) => {
+    const cardToPrint = jobCard || card;
+    if (!cardToPrint) return;
     setIsPrintMode(true);
-    setTimeout(() => printAfterRender(), 300);
+    setCard(cardToPrint);
+    setTimeout(() => printAfterRender(cardToPrint), 300);
   };
 
   if (loading) {
@@ -67,7 +78,12 @@ export default function JobCardDetailPage() {
     );
   }
 
-  function printAfterRender() {
+  function printAfterRender(jobCard: JobCard) {
+    if (originalDocumentTitle.current === null) {
+      originalDocumentTitle.current = document.title;
+    }
+    document.title = getJobCardPrintTitle(jobCard);
+
     void document.fonts.ready.then(() => {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => window.print());
@@ -123,7 +139,7 @@ export default function JobCardDetailPage() {
           ) : (
             <button
               type="button"
-              onClick={handlePrint}
+              onClick={() => handlePrint()}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center gap-1.5 shadow"
             >
               <Printer className="w-4 h-4" />

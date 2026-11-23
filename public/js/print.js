@@ -310,6 +310,23 @@ function generatePrintMarkup(card) {
 }
 
 // 1-Click Native Vector Print (Clean, No Blank Pages)
+function getJobCardPrintFilename(card) {
+    const cleanPart = (value) => String(value || '')
+        .normalize('NFKC')
+        .trim()
+        .replace(/[\u0000-\u001f<>:"\/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')
+        .replace(/[-_]{2,}/g, '_')
+        .replace(/^[._ -]+|[._ -]+$/g, '')
+        .slice(0, 40);
+    const identity = [
+        cleanPart(card.customer?.name),
+        cleanPart(card.vehicle?.plateNo)
+    ].filter(Boolean).join('_');
+    const fallback = cleanPart(card.id) || 'New';
+    return `JobCard_${identity || fallback}`;
+}
+
 function printJobCardNative(card) {
     if (!card) return;
     let existing = document.getElementById('printableA4Document');
@@ -318,6 +335,11 @@ function printJobCardNative(card) {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = generatePrintMarkup(card);
     document.body.appendChild(wrapper.firstElementChild);
+    const originalTitle = document.title;
+    document.title = getJobCardPrintFilename(card);
+    window.addEventListener('afterprint', () => {
+        document.title = originalTitle;
+    }, { once: true });
 
     setTimeout(() => {
         window.print();
@@ -339,11 +361,9 @@ function downloadJobCardPdf(card) {
     document.body.appendChild(wrapper);
 
     const element = wrapper.firstElementChild;
-    const cleanPlate = (card.vehicle?.plateNo || '').replace(/\s+/g, '_');
-
     const opt = {
         margin: [4, 4, 4, 4],
-        filename: `JobCard_${card.id || 'ASH'}_${cleanPlate || 'Vehicle'}.pdf`,
+        filename: `${getJobCardPrintFilename(card)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

@@ -10,23 +10,18 @@ let allCards = [];
 let activeDeptFilter = 'all';
 let searchQuery = '';
 
-function getAdminToken() {
-    return localStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
-}
-
 let isActionPending = false;
 let refreshDebounceTimer = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Initial token existence check
+    clearLegacyCredentialStorage();
     if (checkAdminAuth()) {
         showAuthenticatedUi();
-        // Asynchronously verify token signature with server
-        verifySessionWithServer();
     } else {
         showAdminLogin();
     }
 
+    await verifySessionWithServer();
     await refreshDashboard(true);
 
     // Real-time event listener (Centralized backend push - debounced to execute one calm render)
@@ -45,38 +40,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleInitialNavigation();
 });
 
+function clearLegacyCredentialStorage() {
+    try {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+        localStorage.removeItem('al_shaheen_staff_token');
+        sessionStorage.removeItem('al_shaheen_staff_token');
+        localStorage.removeItem('al_shaheen_gemini_key');
+    } catch (error) {
+        console.warn('Unable to clear legacy credential storage:', error.message);
+    }
+}
+
 // ==========================================================================
 // 1. SECURE TOKEN AUTHENTICATION & LOGIN GATE
 // ==========================================================================
 function checkAdminAuth() {
-    const token = getAdminToken();
-    return !!token && token.length > 10;
+    return !!(localStorage.getItem(ADMIN_AUTH_KEY) || sessionStorage.getItem(ADMIN_AUTH_KEY));
 }
 
 async function verifySessionWithServer() {
-    const token = getAdminToken();
-    if (!token) {
-        showAdminLogin();
-        return false;
-    }
     try {
         const res = await fetch('/api/auth/verify', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'same-origin',
+            cache: 'no-store'
         });
         if (!res.ok) {
-            adminLogout();
+            localStorage.removeItem(ADMIN_AUTH_KEY);
+            sessionStorage.removeItem(ADMIN_AUTH_KEY);
+            showAdminLogin();
             return false;
         }
         const json = await res.json();
         if (json.success && json.valid) {
+            if (!checkAdminAuth()) {
+                localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({
+                    user: json.user,
+                    role: 'admin',
+                    loginTime: Date.now()
+                }));
+            }
             showAuthenticatedUi(json.user);
             return true;
         }
     } catch (e) {
-        // Network offline fallback: allow existing session
-        return true;
+        console.error('Unable to verify admin session:', e);
+        showAdminLogin();
+        return false;
     }
-    adminLogout();
+    localStorage.removeItem(ADMIN_AUTH_KEY);
+    sessionStorage.removeItem(ADMIN_AUTH_KEY);
+    showAdminLogin();
     return false;
 }
 
@@ -127,11 +141,17 @@ async function handleAdminLoginSubmit(e) {
     const username = (usernameInput?.value || '').trim();
     const password = (passwordInput?.value || '').trim();
 
-    if (!username || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}$/.test(password)) {
+    const validationError = !username
+        ? 'Enter your admin username.'
+        : !/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}$/.test(password)
+            ? 'Use exactly 12 characters with uppercase, lowercase, a number, and a symbol. No spaces.'
+            : '';
+    if (validationError) {
         if (errBox) {
-            errBox.textContent = 'Password must be exactly 12 characters with uppercase, lowercase, a number, and a symbol (no spaces).';
+            errBox.textContent = validationError;
             errBox.style.display = 'block';
         }
+        showToast(validationError, 'error');
         return;
     }
 
@@ -144,12 +164,12 @@ async function handleAdminLoginSubmit(e) {
         const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, rememberMe: !!rememberMe })
         });
 
         const data = await res.json();
 
-        if (res.ok && data.success && data.token) {
+        if (res.ok && data.success) {
             const storage = rememberMe ? localStorage : sessionStorage;
 
             // Clear previous session remnants
@@ -158,8 +178,7 @@ async function handleAdminLoginSubmit(e) {
             localStorage.removeItem(ADMIN_AUTH_KEY);
             sessionStorage.removeItem(ADMIN_AUTH_KEY);
 
-            // Store verified token & session
-            storage.setItem(ADMIN_TOKEN_KEY, data.token);
+            // Store non-sensitive display metadata only; the session token is HttpOnly.
             storage.setItem(ADMIN_AUTH_KEY, JSON.stringify({
                 user: data.user || username,
                 role: data.role || 'admin',
@@ -169,22 +188,27 @@ async function handleAdminLoginSubmit(e) {
             if (passwordInput) passwordInput.value = '';
 
             showAuthenticatedUi(data.user || username);
+            showToast('Signed in successfully.');
             await refreshDashboard();
         } else {
+            const message = data.error || 'Access Denied: Invalid username or password.';
             if (errBox) {
-                errBox.textContent = data.error || 'Access Denied: Invalid username or password.';
+                errBox.textContent = message;
                 errBox.style.display = 'block';
             }
+            showToast(message, 'error');
             if (passwordInput) {
                 passwordInput.value = '';
                 passwordInput.focus();
             }
         }
-    } catch (err) {
+    } catch {
+        const message = 'Connection error. Unable to verify credentials with server.';
         if (errBox) {
-            errBox.textContent = 'Connection error. Unable to verify credentials with server.';
+            errBox.textContent = message;
             errBox.style.display = 'block';
         }
+        showToast(message, 'error');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -194,24 +218,28 @@ async function handleAdminLoginSubmit(e) {
 }
 
 // Secure Admin Logout
-function adminLogout() {
-    const token = getAdminToken();
-    if (token) {
-        try {
-            fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            }).catch(() => {});
-        } catch (e) {}
+async function adminLogout() {
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Unable to revoke this session.');
+        }
+
+        localStorage.removeItem(ADMIN_AUTH_KEY);
+        sessionStorage.removeItem(ADMIN_AUTH_KEY);
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+        allCards = [];
+        showAdminLogin();
+    } catch (error) {
+        console.error('Admin sign out failed:', error);
+        showToast('Sign out failed. Please try again.', 'error');
     }
-
-    localStorage.removeItem(ADMIN_AUTH_KEY);
-    sessionStorage.removeItem(ADMIN_AUTH_KEY);
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
-    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-
-    allCards = [];
-    showAdminLogin();
 }
 
 // Change Admin Password
@@ -227,43 +255,46 @@ async function changeAdminPassword() {
     }
 
     if (!currentPass || !newPass || !confirmPass) {
+        const message = 'All password fields are required.';
         if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.background = '#fee2e2';
             statusEl.style.color = '#991b1b';
-            statusEl.textContent = 'All password fields are required.';
+            statusEl.textContent = message;
         }
+        showToast(message, 'error');
         return;
     }
 
     if (newPass !== confirmPass) {
+        const message = 'New passwords do not match.';
         if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.background = '#fee2e2';
             statusEl.style.color = '#991b1b';
-            statusEl.textContent = 'New passwords do not match.';
+            statusEl.textContent = message;
         }
+        showToast(message, 'error');
         return;
     }
 
     if (newPass.length < 4) {
+        const message = 'Password must be at least 4 characters.';
         if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.background = '#fee2e2';
             statusEl.style.color = '#991b1b';
-            statusEl.textContent = 'Password must be at least 4 characters.';
+            statusEl.textContent = message;
         }
+        showToast(message, 'error');
         return;
     }
 
-    const token = getAdminToken();
     try {
         const res = await fetch('/api/auth/change-password', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ currentPassword: currentPass, newPassword: newPass })
         });
         const data = await res.json();
@@ -274,6 +305,7 @@ async function changeAdminPassword() {
                 statusEl.style.color = '#166534';
                 statusEl.textContent = '✓ Password updated successfully! Please keep it secure.';
             }
+            showToast('Password updated successfully.');
             document.getElementById('currentAdminPasswordInput').value = '';
             document.getElementById('newAdminPasswordInput').value = '';
             document.getElementById('confirmAdminPasswordInput').value = '';
@@ -284,6 +316,7 @@ async function changeAdminPassword() {
                 statusEl.style.color = '#991b1b';
                 statusEl.textContent = data.error || 'Failed to update password.';
             }
+            showToast(data.error || 'Failed to update password.', 'error');
         }
     } catch (e) {
         if (statusEl) {
@@ -292,6 +325,7 @@ async function changeAdminPassword() {
             statusEl.style.color = '#991b1b';
             statusEl.textContent = 'Network error while updating password.';
         }
+        showToast('Network error while updating password.', 'error');
     }
 }
 
@@ -772,17 +806,6 @@ function closeSettingsModal() {
     if (m) m.style.display = 'none';
 }
 
-function saveGeminiSettings() {
-    const key = document.getElementById('geminiApiKeyInput')?.value.trim();
-    if (key) {
-        localStorage.setItem('al_shaheen_gemini_key', key);
-        alert('✓ Gemini API Key saved successfully!');
-        closeSettingsModal();
-    } else {
-        alert('Please enter a valid Google Gemini API key.');
-    }
-}
-
 // Global Exports
 window.showView = showView;
 window.refreshDashboard = refreshDashboard;
@@ -795,7 +818,6 @@ window.setDeptFilter = setDeptFilter;
 window.handleSearch = handleSearch;
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
-window.saveGeminiSettings = saveGeminiSettings;
 window.setStatusViewFilter = setStatusViewFilter;
 window.closeJobCardPayment = closeJobCardPayment;
 window.reopenJobCard = reopenJobCard;

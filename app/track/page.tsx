@@ -21,23 +21,22 @@ import {
   Sparkles,
 } from 'lucide-react';
 import AuthSessionButton from '@/components/AuthSessionButton';
+import { toast } from 'sonner';
 
 export default function CustomerTrackPage() {
   const [plateInput, setPlateInput] = useState('');
   const [statusData, setStatusData] = useState<PublicVehicleStatus | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
 
   const handleLookup = async (plateToSearch?: string) => {
     const query = plateToSearch || plateInput;
     if (!query || query.trim().length === 0) {
-      setError('Please enter your vehicle registration plate number.');
+      toast.error('Please enter your vehicle registration plate number.');
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const res = await fetch(`/api/track?plate=${encodeURIComponent(query.trim())}`, {
@@ -47,13 +46,14 @@ export default function CustomerTrackPage() {
 
       if (!res.ok || !json.data) {
         setStatusData(null);
-        setError(json.error || `No active job card found for plate "${query.trim()}".`);
+        toast.error(json.error || `No active job card found for plate "${query.trim()}".`);
       } else {
         setStatusData(json.data);
         setLastChecked(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        toast.success('Vehicle status found.');
       }
-    } catch (err: any) {
-      setError('Unable to reach workshop telemetry server. Please try again.');
+    } catch {
+      toast.error('Unable to reach workshop telemetry server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -154,11 +154,6 @@ export default function CustomerTrackPage() {
             </button>
           </div>
 
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 text-xs">
-              {error}
-            </div>
-          )}
         </div>
 
         {/* Live Status Card */}

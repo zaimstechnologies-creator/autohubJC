@@ -664,14 +664,8 @@
                 <div style="margin-bottom:20px;">
                     <h4 style="font-size:13px; font-weight:700; color:#1e293b; margin-bottom:6px;">Google Gemini AI Diagnostics</h4>
                     <p style="font-size:12px; color:#64748b; margin-bottom:10px;">
-                        Connect your Google Gemini API key to enable live master-level automotive diagnostics for Al Shaheen Auto Hub.
+                        AI diagnostics are configured securely on the server. Set GEMINI_API_KEY in the deployment environment; never enter API keys in this browser.
                     </p>
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <input type="password" id="geminiApiKeyInput" class="form-control" placeholder="Paste your API key here (AIzaSy...)" value="">
-                    </div>
-                    <div style="display:flex; justify-content:flex-end;">
-                        <button type="button" class="btn-primary" style="padding:6px 14px; font-size:12px;" onclick="saveGeminiSettings()">Save AI Key</button>
-                    </div>
                 </div>
 
                 <!-- 2. Admin Password Management -->
@@ -704,6 +698,7 @@
     </div>
 
     <!-- Application Scripts -->
+    <script src="/js/toast.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/print.js"></script>
     <script src="/js/jobcard.js"></script>

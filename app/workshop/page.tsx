@@ -31,6 +31,7 @@ import {
   Lock,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function WorkshopDashboard() {
   const [jobCards, setJobCards] = useState<JobCard[]>([]);
@@ -41,7 +42,6 @@ export default function WorkshopDashboard() {
   const [lockedCardIds, setLockedCardIds] = useState<Set<string>>(new Set());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
-  const [geminiKeyOverride, setGeminiKeyOverride] = useState('');
   // Fetch job cards
   const loadJobCards = async () => {
     try {
@@ -97,11 +97,13 @@ export default function WorkshopDashboard() {
 
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error || 'Failed to reassign bay');
+        toast.error(json.error || 'Failed to reassign bay.');
+      } else {
+        toast.success('Vehicle reassigned to the selected bay.');
       }
       await loadJobCards();
     } catch (err: any) {
-      alert(`Reassign error: ${err.message}`);
+      toast.error(`Reassign error: ${err.message}`);
     } finally {
       releaseLock(cardId);
     }
@@ -127,11 +129,13 @@ export default function WorkshopDashboard() {
 
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error || 'Failed to update status');
+        toast.error(json.error || 'Failed to update status.');
+      } else {
+        toast.success('Job card status updated.');
       }
       await loadJobCards();
     } catch (err: any) {
-      alert(`Status update error: ${err.message}`);
+      toast.error(`Status update error: ${err.message}`);
     } finally {
       releaseLock(cardId);
     }
@@ -667,21 +671,9 @@ export default function WorkshopDashboard() {
                 </span>
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  Gemini API Key Override (Optional)
-                </label>
-                <input
-                  type="password"
-                  value={geminiKeyOverride}
-                  onChange={(e) => setGeminiKeyOverride(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
-                />
-                <span className="text-[10px] text-slate-500 mt-1 block">
-                  Overrides default environment variable key for master diagnostics.
-                </span>
-              </div>
+              <p className="text-xs text-slate-400">
+                AI diagnostics use the server-side GEMINI_API_KEY configuration. API keys are never entered or stored in this browser.
+              </p>
             </div>
 
             <div className="pt-2 flex justify-end gap-2">

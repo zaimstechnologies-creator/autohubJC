@@ -4,7 +4,7 @@ import { runAIDiagnosis } from '@/lib/gemini';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { make_model, variant, mileage_km, customer_concern, apiKeyOverride } = body;
+    const { make_model, variant, mileage_km, customer_concern } = body;
 
     if (!customer_concern || typeof customer_concern !== 'string' || customer_concern.trim().length === 0) {
       return NextResponse.json(
@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
       variant: variant || '',
       mileage_km: Number(mileage_km) || 0,
       customer_concern: customer_concern.trim(),
-      apiKeyOverride,
     });
 
     return NextResponse.json({

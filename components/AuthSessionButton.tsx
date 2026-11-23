@@ -1,19 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AuthSessionButtonProps {
   fullWidth?: boolean;
 }
 
 export default function AuthSessionButton({ fullWidth = false }: AuthSessionButtonProps) {
+  const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [error, setError] = useState('');
 
   async function handleSignOut() {
     setIsSigningOut(true);
-    setError('');
 
     try {
       const response = await fetch('/api/auth/logout', {
@@ -32,10 +33,11 @@ export default function AuthSessionButton({ fullWidth = false }: AuthSessionButt
         console.error('Unable to clear legacy admin session storage:', storageError);
       }
 
-      window.location.replace('/login');
+      toast.success('Signed out successfully.');
+      router.replace('/login');
     } catch (signOutError) {
       console.error('Sign out failed:', signOutError);
-      setError('Sign out failed. Please try again.');
+      toast.error('Sign out failed. Please try again.');
       setIsSigningOut(false);
     }
   }
@@ -55,11 +57,6 @@ export default function AuthSessionButton({ fullWidth = false }: AuthSessionButt
         <LogOut className="h-4 w-4" aria-hidden="true" />
         {isSigningOut ? 'Signing out…' : 'Log Out'}
       </button>
-      {error && (
-        <span role="alert" className="text-xs font-medium text-red-400">
-          {error}
-        </span>
-      )}
     </div>
   );
 }

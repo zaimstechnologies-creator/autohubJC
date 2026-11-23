@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import JobCardForm from '@/components/JobCardForm';
 import { JobCard } from '@/types';
+import { getJobCardPrintTitle } from '@/lib/jobCardPrintName';
 import { Loader2 } from 'lucide-react';
 import PrintJobCardA4 from '@/components/PrintJobCardA4';
 import AuthSessionButton from '@/components/AuthSessionButton';
@@ -13,6 +14,7 @@ function NewJobCardContent() {
   const router = useRouter();
   const [printCard, setPrintCard] = useState<JobCard | null>(null);
   const printStartedFor = useRef<string | null>(null);
+  const originalDocumentTitle = useRef<string | null>(null);
 
   const categoryParam = searchParams.get('category');
   const bayParam = searchParams.get('bay');
@@ -34,6 +36,10 @@ function NewJobCardContent() {
     if (!printCard || printStartedFor.current === printCard.id) return;
 
     printStartedFor.current = printCard.id;
+    if (originalDocumentTitle.current === null) {
+      originalDocumentTitle.current = document.title;
+    }
+    document.title = getJobCardPrintTitle(printCard);
     setTimeout(() => {
       void document.fonts.ready.then(() => {
         window.requestAnimationFrame(() => {
@@ -47,6 +53,10 @@ function NewJobCardContent() {
     const handleAfterPrint = () => {
       setPrintCard(null);
       printStartedFor.current = null;
+      if (originalDocumentTitle.current !== null) {
+        document.title = originalDocumentTitle.current;
+        originalDocumentTitle.current = null;
+      }
     };
     window.addEventListener('afterprint', handleAfterPrint);
     return () => window.removeEventListener('afterprint', handleAfterPrint);

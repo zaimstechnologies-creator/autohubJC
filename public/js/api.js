@@ -7,13 +7,7 @@ const API_BASE = '/api';
 const LOCAL_STORAGE_KEY = 'al_shaheen_job_cards_v3';
 
 function getAdminAuthHeaders(extraHeaders = {}) {
-    const token = (typeof window !== 'undefined') ?
-        (localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '') : '';
-    const headers = { ...extraHeaders };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
+    return { ...extraHeaders };
 }
 
 class JobCardAPI {
@@ -34,16 +28,6 @@ class JobCardAPI {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${proto}//${window.location.host}/ws`;
             this.ws = new WebSocket(wsUrl);
-
-            this.ws.onopen = () => {
-                const token = (typeof window !== 'undefined') ?
-                    (localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '') : '';
-                if (token && this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    try {
-                        this.ws.send(JSON.stringify({ type: 'auth', token }));
-                    } catch (e) {}
-                }
-            };
 
             this.ws.onmessage = (evt) => {
                 try {
@@ -110,8 +94,7 @@ class JobCardAPI {
         if (typeof window === 'undefined') return;
         setInterval(async () => {
             if (typeof document !== 'undefined' && document.hidden) return;
-            const token = localStorage.getItem('al_shaheen_admin_token') || sessionStorage.getItem('al_shaheen_admin_token') || '';
-            if (!token) return;
+            if (!localStorage.getItem('al_shaheen_admin_session') && !sessionStorage.getItem('al_shaheen_admin_session')) return;
 
             try {
                 const res = await fetch(`${API_BASE}/jobcards?_t=${Date.now()}`, {

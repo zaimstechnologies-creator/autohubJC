@@ -12,7 +12,9 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'jobcards.json');
-const CONFIG_FILE = path.join(__dirname, 'config.json');
+const REVOKED_SESSIONS_FILE = path.join(__dirname, 'data', 'revoked-sessions.json');
+const ADMIN_SESSION_COOKIE = 'al_shaheen_staff_session';
+const ADMIN_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -108,14 +110,7 @@ function writeJobCards(cards) {
 }
 
 function getGeminiApiKey() {
-    if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-    try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            const conf = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-            if (conf.geminiApiKey) return conf.geminiApiKey;
-        }
-    } catch (e) {}
-    return '';
+    return process.env.GEMINI_API_KEY || '';
 }
 
 // Server-Sent Events (SSE) & WebSocket Engine for Real-Time TV and Multi-Device Sync
@@ -223,54 +218,141 @@ function generateSignedToken(username) {
         throw new Error('Authentication signing secret is not configured.');
     }
     const issuedAt = Date.now();
-    const expiresAt = issuedAt + (8 * 60 * 60 * 1000);
-    const payload = `${username}:${issuedAt}:${expiresAt}`;
+    const expiresAt = issuedAt + ADMIN_SESSION_TTL_MS;
+    const tokenId = crypto.randomBytes(16).toString('hex');
+    const payload = `${username}:${issuedAt}:${expiresAt}:${tokenId}`;
     const hmac = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
     const token = Buffer.from(`${payload}:${hmac}`).toString('base64url');
     return { token, expiresAt, username };
 }
 
+function readRevokedSessions() {
+    let raw;
+    try {
+        raw = fs.readFileSync(REVOKED_SESSIONS_FILE, 'utf8');
+    } catch (error) {
+        if (error.code === 'ENOENT') return {};
+        throw new Error(`Unable to read session revocation records: ${error.message}`);
+    }
+
+    let records;
+    try {
+        records = JSON.parse(raw);
+    } catch (error) {
+        throw new Error('Session revocation records are invalid JSON.');
+    }
+    if (!records || typeof records !== 'object' || Array.isArray(records)) {
+        throw new Error('Session revocation records have an invalid format.');
+    }
+
+    for (const [tokenHash, expiresAt] of Object.entries(records)) {
+        if (!/^[a-f0-9]{64}$/.test(tokenHash) || !Number.isSafeInteger(expiresAt)) {
+            throw new Error('Session revocation records contain invalid entries.');
+        }
+    }
+    return records;
+}
+
+function isTokenRevoked(token) {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const records = readRevokedSessions();
+    return Number.isSafeInteger(records[tokenHash]) && records[tokenHash] > Date.now();
+}
+
+function revokeSignedToken(token, expiresAt) {
+    const records = readRevokedSessions();
+    const now = Date.now();
+    for (const [tokenHash, revokedAt] of Object.entries(records)) {
+        if (revokedAt <= now) delete records[tokenHash];
+    }
+
+    records[crypto.createHash('sha256').update(token).digest('hex')] = expiresAt;
+    fs.mkdirSync(path.dirname(REVOKED_SESSIONS_FILE), { recursive: true });
+
+    const temporaryFile = `${REVOKED_SESSIONS_FILE}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+    try {
+        fs.writeFileSync(temporaryFile, JSON.stringify(records), { encoding: 'utf8', mode: 0o600 });
+        fs.renameSync(temporaryFile, REVOKED_SESSIONS_FILE);
+    } catch (error) {
+        try {
+            if (fs.existsSync(temporaryFile)) fs.unlinkSync(temporaryFile);
+        } catch (cleanupError) {
+            console.error('Unable to remove temporary session revocation file:', cleanupError.message);
+        }
+        throw new Error(`Unable to save session revocation record: ${error.message}`);
+    }
+}
+
 function verifySignedToken(token) {
     const credentials = getAdminCredentials();
     if (!credentials || !token || typeof token !== 'string') return null;
+    let parts;
     try {
         const decoded = Buffer.from(token, 'base64url').toString('utf8');
-        const parts = decoded.split(':');
-        if (parts.length !== 4) return null;
-        const [username, issuedAt, expiresAt, receivedHmac] = parts;
-        const issuedAtMs = Number(issuedAt);
-        const expiresAtMs = Number(expiresAt);
-        if (
-            username !== credentials.username ||
-            !Number.isSafeInteger(issuedAtMs) ||
-            !Number.isSafeInteger(expiresAtMs) ||
-            issuedAtMs > Date.now() + 60_000 ||
-            expiresAtMs <= Date.now() ||
-            expiresAtMs - issuedAtMs > 8 * 60 * 60 * 1000
-        ) {
-            return null; // Expired
-        }
-        const expectedPayload = `${username}:${issuedAt}:${expiresAt}`;
-        const calculatedHmac = crypto.createHmac('sha256', AUTH_SECRET).update(expectedPayload).digest('hex');
-        const bufA = Buffer.from(receivedHmac, 'hex');
-        const bufB = Buffer.from(calculatedHmac, 'hex');
-        if (bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
-            return { username, expiresAt: expiresAtMs };
-        }
-    } catch (e) {}
-    return null;
+        parts = decoded.split(':');
+    } catch (error) {
+        return null;
+    }
+    if (parts.length !== 5) return null;
+
+    const [username, issuedAt, expiresAt, tokenId, receivedHmac] = parts;
+    const issuedAtMs = Number(issuedAt);
+    const expiresAtMs = Number(expiresAt);
+    if (
+        username !== credentials.username ||
+        !Number.isSafeInteger(issuedAtMs) ||
+        !Number.isSafeInteger(expiresAtMs) ||
+        !/^[a-f0-9]{32}$/.test(tokenId) ||
+        issuedAtMs > Date.now() + 60_000 ||
+        expiresAtMs <= Date.now() ||
+        expiresAtMs - issuedAtMs > ADMIN_SESSION_TTL_MS
+    ) {
+        return null;
+    }
+
+    const expectedPayload = `${username}:${issuedAt}:${expiresAt}:${tokenId}`;
+    const calculatedHmac = crypto.createHmac('sha256', AUTH_SECRET).update(expectedPayload).digest('hex');
+    const bufA = Buffer.from(receivedHmac, 'hex');
+    const bufB = Buffer.from(calculatedHmac, 'hex');
+    if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) return null;
+    if (isTokenRevoked(token)) return null;
+    return { username, expiresAt: expiresAtMs };
+}
+
+function getSessionTokenFromRequest(req) {
+    const authHeader = req.headers['authorization'] || req.headers['x-admin-token'] || '';
+    if (typeof authHeader === 'string' && authHeader.trim()) {
+        return authHeader.startsWith('Bearer ')
+            ? authHeader.substring(7).trim()
+            : authHeader.trim();
+    }
+
+    const cookieHeader = req.headers.cookie || '';
+    for (const cookie of cookieHeader.split(';')) {
+        const separator = cookie.indexOf('=');
+        if (separator < 0 || cookie.slice(0, separator).trim() !== ADMIN_SESSION_COOKIE) continue;
+        return cookie.slice(separator + 1).trim();
+    }
+    return '';
+}
+
+function setAdminSessionCookie(res, token, maxAgeSeconds) {
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    const maxAge = Number.isSafeInteger(maxAgeSeconds) ? `; Max-Age=${maxAgeSeconds}` : '';
+    res.setHeader(
+        'Set-Cookie',
+        `${ADMIN_SESSION_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/${maxAge}${secure}`
+    );
 }
 
 function requireAdminAuth(req, res, next) {
-    const authHeader = req.headers['authorization'] || req.headers['x-admin-token'] || '';
-    let token = '';
-    if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7).trim();
-    } else {
-        token = authHeader.trim();
+    let session;
+    try {
+        session = verifySignedToken(getSessionTokenFromRequest(req));
+    } catch (error) {
+        console.error('Admin session verification failed:', error.message);
+        return res.status(503).json({ success: false, error: 'Unable to verify the admin session right now.' });
     }
-
-    const session = verifySignedToken(token);
     if (!session) {
         return res.status(401).json({
             success: false,
@@ -287,7 +369,7 @@ function requireAdminAuth(req, res, next) {
 
 // 1. Admin Sign In (Strict Credential Verification)
 app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
-    const { username, password } = req.body || {};
+    const { username, password, rememberMe } = req.body || {};
     const creds = getAdminCredentials();
 
     if (!creds) {
@@ -304,10 +386,15 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
     ) {
         try {
             if (username.trim() === creds.username && verifyAdminPassword(password, creds.passwordHash)) {
+                readRevokedSessions();
                 const tokenData = generateSignedToken(creds.username);
+                setAdminSessionCookie(
+                    res,
+                    tokenData.token,
+                    rememberMe === true ? ADMIN_SESSION_TTL_MS / 1000 : undefined
+                );
                 return res.json({
                     success: true,
-                    token: tokenData.token,
                     expiresAt: tokenData.expiresAt,
                     user: creds.username,
                     role: 'admin'
@@ -330,11 +417,14 @@ app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
 
 // 2. Verify Session Validity
 app.get(['/api/auth/verify', '/auth/verify'], (req, res) => {
-    const authHeader = req.headers['authorization'] || req.headers['x-admin-token'] || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader.trim();
-    const session = verifySignedToken(token);
-    if (session) {
-        return res.json({ success: true, valid: true, user: session.username });
+    try {
+        const session = verifySignedToken(getSessionTokenFromRequest(req));
+        if (session) {
+            return res.json({ success: true, valid: true, user: session.username });
+        }
+    } catch (error) {
+        console.error('Admin session verification failed:', error.message);
+        return res.status(503).json({ success: false, valid: false, error: 'Unable to verify the admin session right now.' });
     }
     return res.status(401).json({ success: false, valid: false, error: 'Session expired or invalid.' });
 });
@@ -349,6 +439,17 @@ app.post(['/api/auth/change-password', '/auth/change-password'], requireAdminAut
 
 // 4. Admin Sign Out
 app.post(['/api/auth/logout', '/auth/logout'], (req, res) => {
+    const token = getSessionTokenFromRequest(req);
+    if (token) {
+        try {
+            const session = verifySignedToken(token);
+            if (session) revokeSignedToken(token, session.expiresAt);
+        } catch (error) {
+            console.error('Admin session revocation failed:', error.message);
+            return res.status(503).json({ success: false, error: 'Unable to safely sign out right now. Please try again.' });
+        }
+    }
+    setAdminSessionCookie(res, '', 0);
     res.json({ success: true, message: 'Logged out successfully.' });
 });
 
@@ -536,8 +637,8 @@ app.delete(['/api/jobcards/:id', '/jobcards/:id'], requireAdminAuth, (req, res) 
 // Accurately interprets English, Urdu, and Roman Urdu mechanical concerns
 // ==========================================================================
 app.post(['/api/ai/diagnose', '/ai/diagnose'], requireAdminAuth, (req, res) => {
-    const { concern, makeModel, mileage, apiKey: clientApiKey } = req.body;
-    const apiKey = clientApiKey || getGeminiApiKey();
+    const { concern, makeModel, mileage } = req.body;
+    const apiKey = getGeminiApiKey();
 
     if (!concern) {
         return res.status(400).json({ success: false, message: 'Customer concern is required' });
@@ -586,14 +687,14 @@ Return STRICTLY valid JSON with no markdown wrapping:
 
         const reqAi = https.request({
             hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+            path: '/v1beta/models/gemini-flash-latest:generateContent',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(payload)
+                'Content-Length': Buffer.byteLength(payload),
+                'x-goog-api-key': apiKey
             },
-            timeout: 3500,
-            agent: new https.Agent({ rejectUnauthorized: false })
+            timeout: 3500
         }, (resAi) => {
             let body = '';
             resAi.on('data', d => body += d);
@@ -876,23 +977,20 @@ if (require.main === module) {
     if (WebSocket) {
         try {
             wssInstance = new WebSocket.Server({ server, path: '/ws' });
-            wssInstance.on('connection', (ws) => {
+            wssInstance.on('connection', (ws, req) => {
                 ws.isAdminAuthenticated = false;
                 ws.send(JSON.stringify({ type: 'connected', timestamp: Date.now() }));
 
-                ws.on('message', (msgStr) => {
-                    try {
-                        const parsed = JSON.parse(msgStr);
-                        if (parsed.type === 'auth' && parsed.token) {
-                            const session = verifySignedToken(parsed.token);
-                            if (session) {
-                                ws.isAdminAuthenticated = true;
-                                const cards = readJobCards();
-                                ws.send(JSON.stringify({ type: 'snapshot', data: cards, timestamp: Date.now() }));
-                            }
-                        }
-                    } catch (err) {}
-                });
+                try {
+                    const session = verifySignedToken(getSessionTokenFromRequest(req));
+                    if (session) {
+                        ws.isAdminAuthenticated = true;
+                        const cards = readJobCards();
+                        ws.send(JSON.stringify({ type: 'snapshot', data: cards, timestamp: Date.now() }));
+                    }
+                } catch (error) {
+                    console.error('WebSocket admin session verification failed:', error.message);
+                }
             });
         } catch (wsErr) {
             console.warn('WebSocket init warning:', wsErr.message);
