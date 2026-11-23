@@ -74,8 +74,6 @@ export default function LoungeAudioEngine({
     if (isProcessingRef.current || queue.length === 0) return;
 
     isProcessingRef.current = true;
-    setIsAnnouncing(true);
-
     const nextCard = queue[0];
     const isWash = nextCard.bay_category === 'CAR_WASH';
     const bayTitle = isWash ? `Car Wash Bay ${nextCard.bay_number}` : `Workshop Bay ${nextCard.bay_number}`;
@@ -86,47 +84,13 @@ export default function LoungeAudioEngine({
       : 'The vehicle';
     const speechMessage = `Attention please. ${registration}, ${vehicleName}, is now ready for delivery. Please proceed to the accounts counter. Thank you.`;
 
-    setCurrentAnnouncementText(
-      `Announcing: ${nextCard.make_model || 'Vehicle'} - ${bayTitle}`
-    );
-
-    // 1. Duck YouTube volume to 10%
     try {
-      if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
-        playerRef.current.setVolume(10);
-      }
-    } catch (err) {
-      console.warn('Could not duck YouTube volume:', err);
-    }
-
-    // 2. Play Audio Chime
-    try {
-      const audio = new Audio('/chime.mp3');
-      await audio.play().catch(async () => {
-        // Fallback to Web Audio API synthesized harmonic chime
-        await playWebAudioChime();
-      });
-      // Pause slightly after chime
-      await new Promise((r) => setTimeout(r, 600));
-    } catch (_) {
-      await playWebAudioChime();
-    }
-
-    // 3. Perform SpeechSynthesis
-    await new Promise<void>((resolve) => {
-      if (!window.speechSynthesis) {
-        resolve();
+      if (!('speechSynthesis' in window)) {
+        if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
         return;
       }
 
-      window.speechSynthesis.cancel(); // Clear any hung speech
-      const utterance = new SpeechSynthesisUtterance(speechMessage);
-      utterance.rate = 0.82;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      utterance.lang = 'en-US';
-
-      // Select high quality English voice if available
+      window.speechSynthesis.resume();
       const voices = window.speechSynthesis.getVoices();
       const preferred =
         voices.find((v) =>
@@ -135,49 +99,83 @@ export default function LoungeAudioEngine({
         ) ||
         voices.find((v) => v.lang?.toLowerCase().startsWith('en-us')) ||
         voices.find((v) => v.lang?.toLowerCase().startsWith('en'));
-      if (preferred) utterance.voice = preferred;
 
-      let finished = false;
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        resolve();
-      };
-      const timeout = window.setTimeout(finish, 12000);
-      utterance.onend = () => {
-        window.clearTimeout(timeout);
-        finish();
-      };
-      utterance.onerror = () => {
-        window.clearTimeout(timeout);
-        finish();
-      };
+      setIsAnnouncing(true);
+      setCurrentAnnouncementText(`Announcing: ${nextCard.make_model || 'Vehicle'} - ${bayTitle}`);
 
-      window.speechSynthesis.speak(utterance);
-    });
-
-    // 4. Wait 1.2s post-speech interval
-    await new Promise((r) => setTimeout(r, 1200));
-
-    // Notify queue completion for this item
-    if (onAnnouncementComplete) {
-      onAnnouncementComplete(nextCard.id);
-    }
-
-    // If queue is now empty, restore volume
-    if (queue.length <= 1) {
+      // Only duck after speech support is confirmed.
       try {
-        if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
-          playerRef.current.setVolume(100);
-        }
+        if (playerRef.current?.setVolume) playerRef.current.setVolume(35);
+      } catch (err) {
+        console.warn('Could not duck YouTube volume:', err);
+      }
+
+      try {
+        const audio = new Audio('/chime.mp3');
+        await Promise.race([
+          audio.play().catch(() => playWebAudioChime()),
+          new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+        ]);
+      } catch (_) {
+        await playWebAudioChime();
+      }
+
+      await new Promise<void>((resolve) => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(speechMessage);
+        utterance.rate = 0.82;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = 'en-US';
+        if (preferred) utterance.voice = preferred;
+
+        let started = false;
+        let finished = false;
+        const timeout = window.setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            resolve();
+          }
+        }, 12000);
+
+        utterance.onstart = () => {
+          started = true;
+        };
+        utterance.onend = () => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(timeout);
+          resolve();
+        };
+        utterance.onerror = () => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(timeout);
+          resolve();
+        };
+
+        window.speechSynthesis.speak(utterance);
+        window.setTimeout(() => {
+          if (!started && !finished) {
+            finished = true;
+            window.clearTimeout(timeout);
+            resolve();
+          }
+        }, 1500);
+      });
+
+      await new Promise((resolve) => window.setTimeout(resolve, 800));
+      if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+    } finally {
+      try {
+        if (playerRef.current?.setVolume) playerRef.current.setVolume(100);
       } catch (err) {
         console.warn('Could not restore YouTube volume:', err);
       }
       setIsAnnouncing(false);
       setCurrentAnnouncementText(null);
+      isProcessingRef.current = false;
     }
-
-    isProcessingRef.current = false;
   }, [queue, onAnnouncementComplete, playerRef]);
 
   useEffect(() => {

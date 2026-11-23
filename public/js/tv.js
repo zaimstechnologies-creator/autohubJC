@@ -399,21 +399,17 @@ function processAnnouncementQueue() {
 function playSingleAnnouncement(vehicle, onFinished) {
     unlockTvAudio();
 
-    // 1. Duck YouTube video volume down to 10% for crystal clear announcement
-    setYtVolume(10);
+    if (!('speechSynthesis' in window)) {
+        if (onFinished) onFinished();
+        return;
+    }
 
-    // 2. Play airport chime
+    window.speechSynthesis.resume();
+    // Duck only after browser speech support is confirmed.
+    setYtVolume(35);
     playAirportChime();
 
     setTimeout(() => {
-        if (!('speechSynthesis' in window)) {
-            setTimeout(() => {
-                setYtVolume(100);
-                if (onFinished) onFinished();
-            }, 3500);
-            return;
-        }
-
         try {
             window.speechSynthesis.resume();
         } catch (e) {}

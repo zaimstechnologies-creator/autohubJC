@@ -45,6 +45,7 @@ export default function LoungeTVPage() {
 
   const playerRef = useRef<any>(null);
   const initialLoadDone = useRef(false);
+  const announcedCardIdsRef = useRef<Set<string>>(new Set());
 
   // Live Clock updater
   useEffect(() => {
@@ -75,12 +76,7 @@ export default function LoungeTVPage() {
 
   useEffect(() => {
     const unlockAudio = async () => {
-      if (isAudioUnlocked) return;
       setIsAudioUnlocked(true);
-
-      try {
-        await playWebAudioChime();
-      } catch (_) {}
 
       try {
         if (playerRef.current) {
@@ -93,18 +89,29 @@ export default function LoungeTVPage() {
         console.warn('Automatic audio unlock error:', err);
       }
 
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.resume();
+          const silentUtterance = new SpeechSynthesisUtterance(' ');
+          silentUtterance.volume = 0;
+          window.speechSynthesis.speak(silentUtterance);
+        }
+      } catch (err) {
+        console.warn('Automatic speech unlock error:', err);
+      }
+
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
 
-    // Smart TVs and browsers usually require one interaction before speech/audio.
+    // Unlock silently; do not play a chime or change the video volume on click.
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
 
-    const startupAttempt = window.setTimeout(unlockAudio, 800);
+    // Best-effort startup attempt; browser autoplay policy may still require one interaction.
+    void unlockAudio();
 
     return () => {
-      window.clearTimeout(startupAttempt);
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
@@ -128,7 +135,7 @@ export default function LoungeTVPage() {
 
       if (initialLoadDone.current) {
         readyVehicles.forEach((c) => {
-          if (!announcedCardIds.has(c.id)) {
+          if (!announcedCardIdsRef.current.has(c.id)) {
             setAnnouncementQueue((prev) => {
               if (prev.some((item) => item.id === c.id)) return prev;
               return [...prev, c];
@@ -139,6 +146,7 @@ export default function LoungeTVPage() {
         // On first load, mark existing ready vehicles as already notified
         const existingIds = new Set(readyVehicles.map((c) => c.id));
         setAnnouncedCardIds(existingIds);
+        announcedCardIdsRef.current = existingIds;
         initialLoadDone.current = true;
       }
     } catch (err) {
@@ -148,10 +156,26 @@ export default function LoungeTVPage() {
   };
 
   useEffect(() => {
-    fetchCards();
-    const timer = setInterval(fetchCards, 6000);
-    return () => clearInterval(timer);
-  }, [announcedCardIds]);
+    void fetchCards();
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchCards();
+      }
+    }, 2000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchCards();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // YouTube IFrame Player API loader
   useEffect(() => {
@@ -248,7 +272,10 @@ export default function LoungeTVPage() {
 
   const handleAnnouncementFinished = (cardId: string) => {
     setAnnouncementQueue((prev) => prev.filter((c) => c.id !== cardId));
-    setAnnouncedCardIds((prev) => new Set(prev).add(cardId));
+    const updated = new Set(announcedCardIdsRef.current);
+    updated.add(cardId);
+    announcedCardIdsRef.current = updated;
+    setAnnouncedCardIds(updated);
   };
 
   // Filter Active Vehicles in Workshop (Non-Closed)

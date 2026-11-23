@@ -24,7 +24,7 @@ function toLoungeCard(card: Partial<JobCard>): LoungeJobCard {
   const updatedAt = String(card.updated_at || 'unknown');
 
   return {
-    id: `${bayCategory}-${bayNumber}-${updatedAt}`,
+    id: String(card.id || card.job_card_number || `${bayCategory}-${bayNumber}-${updatedAt}`),
     make_model: String(card.make_model || 'Vehicle'),
     plate_number: String(card.plate_number || ''),
     variant: String(card.variant || ''),
@@ -41,7 +41,7 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from('job_cards')
       .select(
-        'make_model, plate_number, variant, bay_category, bay_number, status, departments, updated_at'
+        'id, job_card_number, make_model, plate_number, variant, bay_category, bay_number, status, departments, updated_at'
       )
       .neq('status', 'CLOSED_PAID')
       .order('updated_at', { ascending: false });
