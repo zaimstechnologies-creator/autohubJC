@@ -14,6 +14,13 @@ let cachedVoices = [];
 let knownReadyCards = new Set();
 let isInitialTvLoad = true;
 
+try {
+    const storedReadyCards = JSON.parse(localStorage.getItem('legacy-tv-announced-ready-cards') || '[]');
+    if (Array.isArray(storedReadyCards)) {
+        knownReadyCards = new Set(storedReadyCards);
+    }
+} catch (e) {}
+
 // Sequential FIFO Announcement Queue (One Announcement at a Time)
 let announcementQueue = [];
 let isAnnouncing = false;
@@ -198,11 +205,31 @@ async function loadTvQueue() {
 
     // Detect newly ready vehicles to announce sequentially over lounge speakers
     const currentReadyList = tvJobCards.filter(c => !isClosedCard(c) && (c.status === 'Ready' || c.currentBay === 'Bay 6'));
+    const currentReadyIds = new Set(currentReadyList.map(c => c.id));
+
+    const activeKnownCards = new Set(
+        [...knownReadyCards].filter(id => currentReadyIds.has(id))
+    );
+    if (activeKnownCards.size !== knownReadyCards.size) {
+        knownReadyCards = activeKnownCards;
+        try {
+            localStorage.setItem(
+                'legacy-tv-announced-ready-cards',
+                JSON.stringify([...knownReadyCards])
+            );
+        } catch (e) {}
+    }
 
     if (!isInitialTvLoad) {
         currentReadyList.forEach(car => {
             if (!knownReadyCards.has(car.id)) {
                 knownReadyCards.add(car.id);
+                try {
+                    localStorage.setItem(
+                        'legacy-tv-announced-ready-cards',
+                        JSON.stringify([...knownReadyCards])
+                    );
+                } catch (e) {}
                 queueReadyAnnouncement({
                     id: car.id,
                     plateNo: car.vehicle?.plateNo || 'Vehicle',

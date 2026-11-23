@@ -1,77 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
-import { getLocalJobCards, saveLocalJobCards } from '@/lib/dataStore';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const VALID_STATUSES = new Set(['INTAKE', 'IN_PROGRESS', 'READY_FOR_DELIVERY', 'CLOSED_PAID']);
+const VALID_BAY_CATEGORIES = new Set(['WORKSHOP', 'CAR_WASH']);
 
 export async function PATCH(req: NextRequest) {
+  if (!isSupabaseServerConfigured || !supabaseServer) {
+    return NextResponse.json(
+      { error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' },
+      { status: 503 }
+    );
+  }
+
   try {
-    const { id, bay_category, bay_number, status, lastUpdatedAt } = await req.json();
+    const body = await req.json();
+    const { id, bay_category, bay_number, status, lastUpdatedAt } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: 'Missing job card ID' }, { status: 400 });
+    if (typeof id !== 'string' || !id.trim()) {
+      return NextResponse.json({ error: 'Missing job card ID.' }, { status: 400 });
+    }
+    if (bay_category !== undefined && !VALID_BAY_CATEGORIES.has(bay_category)) {
+      return NextResponse.json({ error: 'Invalid bay category.' }, { status: 400 });
+    }
+    if (
+      bay_number !== undefined &&
+      (!Number.isInteger(bay_number) || bay_number < 1 || bay_number > 6)
+    ) {
+      return NextResponse.json({ error: 'Bay number must be between 1 and 6.' }, { status: 400 });
+    }
+    if (status !== undefined && !VALID_STATUSES.has(status)) {
+      return NextResponse.json({ error: 'Invalid job card status.' }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
-
-    // Optimistic concurrency locking in Supabase: check if lastUpdatedAt is specified
-    if (isSupabaseServerConfigured && supabaseServer) {
-      try {
-        let query = supabaseServer
-          .from('job_cards')
-          .update({
-            bay_category,
-            bay_number,
-            status,
-            updated_at: now,
-            ...(status === 'CLOSED_PAID' ? { closed_at: now } : {}),
-          })
-          .eq('id', id);
-
-        if (lastUpdatedAt) {
-          query = query.eq('updated_at', lastUpdatedAt);
-        }
-
-        const { data, error } = await query.select();
-        if (error) {
-          console.warn('Supabase status update error:', error);
-        } else if (lastUpdatedAt && (!data || data.length === 0)) {
-          return NextResponse.json(
-            { error: 'Conflict: This job card was just updated by another advisor. Reloading latest state.' },
-            { status: 409 }
-          );
-        }
-      } catch (err) {
-        console.warn('Supabase status update exception:', err);
-      }
+    const update: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (bay_category !== undefined) update.bay_category = bay_category;
+    if (bay_number !== undefined) update.bay_number = bay_number;
+    if (status !== undefined) {
+      update.status = status;
+      if (status === 'CLOSED_PAID') update.closed_at = update.updated_at;
     }
 
-    // Update local data safely (In-memory + Writable tmp / seed)
-    const cards = [...getLocalJobCards()];
-    const cardIndex = cards.findIndex((c: any) => c.id === id || c.job_card_number === id);
-    if (cardIndex === -1) {
-      return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
+    let query = supabaseServer
+      .from('job_cards')
+      .update(update)
+      .eq(UUID_PATTERN.test(id) ? 'id' : 'job_card_number', id);
+
+    if (typeof lastUpdatedAt === 'string' && lastUpdatedAt) {
+      query = query.eq('updated_at', lastUpdatedAt);
     }
 
-    const targetCard = { ...cards[cardIndex] };
-
-    // Optimistic lock check on local record
-    if (lastUpdatedAt && targetCard.updated_at && targetCard.updated_at !== lastUpdatedAt) {
-      console.warn(`Local lock conflict: target=${targetCard.updated_at}, received=${lastUpdatedAt}`);
+    const { data, error } = await query.select('*').maybeSingle();
+    if (error) {
+      console.error('Supabase job-card status update failed:', error.message);
+      return NextResponse.json(
+        { error: `Supabase job_cards update failed: ${error.message}` },
+        { status: 503 }
+      );
+    }
+    if (!data) {
+      return NextResponse.json(
+        {
+          error: lastUpdatedAt
+            ? 'Conflict: This job card changed. Reload the latest status and try again.'
+            : 'Job card not found.',
+        },
+        { status: lastUpdatedAt ? 409 : 404 }
+      );
     }
 
-    targetCard.bay_category = bay_category ?? targetCard.bay_category ?? 'WORKSHOP';
-    targetCard.bay_number = bay_number ?? targetCard.bay_number ?? 1;
-    targetCard.status = status ?? targetCard.status;
-    targetCard.updated_at = now;
-    if (status === 'CLOSED_PAID') {
-      targetCard.closed_at = now;
-    }
-
-    cards[cardIndex] = targetCard;
-    saveLocalJobCards(cards);
-
-    return NextResponse.json({ success: true, data: targetCard });
-  } catch (err: any) {
-    console.error('Error in status PATCH route:', err);
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid request body.';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -72,13 +72,13 @@ function mergeDiagnosisScope(
 
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
   const [formData, setFormData] = useState<JobCard>(() => {
-    const initialId =
-      initialData?.id || initialData?.job_card_number || `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
+    const jobCardNumber =
+      initialData?.job_card_number || `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
     const now = new Date().toISOString();
 
     return {
-      id: initialId,
-      job_card_number: initialData?.job_card_number || initialId,
+      id: initialData?.id || '',
+      job_card_number: jobCardNumber,
       customer_name: initialData?.customer_name || '',
       customer_phone: initialData?.customer_phone || '',
       customer_address: initialData?.customer_address || 'Lahore, Pakistan',

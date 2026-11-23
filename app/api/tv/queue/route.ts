@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getLocalJobCards } from '@/lib/dataStore';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
 import type { JobCard } from '@/types';
 
@@ -37,30 +36,31 @@ function toLoungeCard(card: Partial<JobCard>): LoungeJobCard {
 }
 
 export async function GET() {
-  if (isSupabaseServerConfigured && supabaseServer) {
-    const { data, error } = await supabaseServer
-      .from('job_cards')
-      .select(
-        'id, job_card_number, make_model, plate_number, variant, bay_category, bay_number, status, departments, updated_at'
-      )
-      .neq('status', 'CLOSED_PAID')
-      .order('updated_at', { ascending: false });
-
-    if (!error && data) {
-      return NextResponse.json(
-        { success: true, data: data.map((card) => toLoungeCard(card)) },
-        { headers: { 'Cache-Control': 'no-store' } }
-      );
-    }
-    console.warn('Supabase TV queue query failed:', error?.message);
+  if (!isSupabaseServerConfigured || !supabaseServer) {
+    return NextResponse.json(
+      { error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 
-  const cards = getLocalJobCards()
-    .filter((card) => card.status !== 'CLOSED_PAID')
-    .map((card) => toLoungeCard(card));
+  const { data, error } = await supabaseServer
+    .from('job_cards')
+    .select(
+      'id, job_card_number, make_model, plate_number, variant, bay_category, bay_number, status, departments, updated_at'
+    )
+    .neq('status', 'CLOSED_PAID')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase TV queue query failed:', error.message);
+    return NextResponse.json(
+      { error: `Supabase job_cards query failed: ${error.message}` },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
 
   return NextResponse.json(
-    { success: true, data: cards },
+    { success: true, data: data.map((card) => toLoungeCard(card)) },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }

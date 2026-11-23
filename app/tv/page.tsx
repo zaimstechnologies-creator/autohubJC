@@ -47,6 +47,19 @@ export default function LoungeTVPage() {
   const initialLoadDone = useRef(false);
   const announcedCardIdsRef = useRef<Set<string>>(new Set());
 
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('tv-announced-ready-cards') || '[]');
+      if (Array.isArray(stored)) {
+        announcedCardIdsRef.current = new Set(
+          stored.filter((id): id is string => typeof id === 'string')
+        );
+      }
+    } catch (_) {
+      announcedCardIdsRef.current = new Set();
+    }
+  }, []);
+
   // Live Clock updater
   useEffect(() => {
     const updateTime = () => {
@@ -132,6 +145,22 @@ export default function LoungeTVPage() {
 
       // Detect newly ready vehicles for announcement queue
       const readyVehicles = cards.filter((c) => c.status === 'READY_FOR_DELIVERY');
+      const readyIds = new Set(readyVehicles.map((c) => c.id));
+
+      // Forget cards that are no longer ready so a later ready transition announces again.
+      const nextPersistedIds = new Set(
+        [...announcedCardIdsRef.current].filter((id) => readyIds.has(id))
+      );
+      if (nextPersistedIds.size !== announcedCardIdsRef.current.size) {
+        announcedCardIdsRef.current = nextPersistedIds;
+        setAnnouncedCardIds(nextPersistedIds);
+        try {
+          localStorage.setItem(
+            'tv-announced-ready-cards',
+            JSON.stringify([...nextPersistedIds])
+          );
+        } catch (_) {}
+      }
 
       if (initialLoadDone.current) {
         readyVehicles.forEach((c) => {
@@ -143,10 +172,18 @@ export default function LoungeTVPage() {
           }
         });
       } else {
-        // On first load, mark existing ready vehicles as already notified
+        // Existing ready vehicles are remembered across refreshes.
         const existingIds = new Set(readyVehicles.map((c) => c.id));
-        setAnnouncedCardIds(existingIds);
-        announcedCardIdsRef.current = existingIds;
+        const persistedIds = new Set(announcedCardIdsRef.current);
+        const rememberedIds = new Set([...existingIds, ...persistedIds]);
+        setAnnouncedCardIds(rememberedIds);
+        announcedCardIdsRef.current = rememberedIds;
+        try {
+          localStorage.setItem(
+            'tv-announced-ready-cards',
+            JSON.stringify([...rememberedIds])
+          );
+        } catch (_) {}
         initialLoadDone.current = true;
       }
     } catch (err) {
@@ -276,6 +313,12 @@ export default function LoungeTVPage() {
     updated.add(cardId);
     announcedCardIdsRef.current = updated;
     setAnnouncedCardIds(updated);
+    try {
+      localStorage.setItem(
+        'tv-announced-ready-cards',
+        JSON.stringify([...updated])
+      );
+    } catch (_) {}
   };
 
   // Filter Active Vehicles in Workshop (Non-Closed)

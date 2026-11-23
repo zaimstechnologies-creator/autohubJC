@@ -1,94 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
-import { getLocalJobCards, saveLocalJobCards, normalizeJobCard } from '@/lib/dataStore';
+import { normalizeJobCard } from '@/lib/dataStore';
+
+export const dynamic = 'force-dynamic';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function databaseUnavailable() {
+  return NextResponse.json(
+    { error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' },
+    { status: 503 }
+  );
+}
+
+function databaseFailure(error: { message: string }) {
+  console.error('Job-card database request failed:', error.message);
+  return NextResponse.json(
+    { error: `Supabase job_cards request failed: ${error.message}` },
+    { status: 503 }
+  );
+}
+
+function idFilter(identifier: string) {
+  return UUID_PATTERN.test(identifier)
+    ? { column: 'id', value: identifier }
+    : { column: 'job_card_number', value: identifier };
+}
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
+  if (!isSupabaseServerConfigured || !supabaseServer) return databaseUnavailable();
 
-  // If Supabase is configured, try querying Supabase first
-  if (isSupabaseServerConfigured && supabaseServer) {
-    try {
-      if (id) {
-        const { data, error } = await supabaseServer
-          .from('job_cards')
-          .select('*')
-          .or(`id.eq.${id},job_card_number.eq.${id}`)
-          .single();
-        if (!error && data) {
-          return NextResponse.json({ success: true, data: normalizeJobCard(data) });
-        }
-      } else {
-        const { data, error } = await supabaseServer
-          .from('job_cards')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
-          return NextResponse.json({ success: true, data: data.map(normalizeJobCard) });
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase GET failed, falling back to local store:', err);
-    }
+  const identifier = new URL(req.url).searchParams.get('id');
+  if (identifier) {
+    const filter = idFilter(identifier);
+    const { data, error } = await supabaseServer
+      .from('job_cards')
+      .select('*')
+      .eq(filter.column, filter.value)
+      .maybeSingle();
+
+    if (error) return databaseFailure(error);
+    if (!data) return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
+    return NextResponse.json({ success: true, data: normalizeJobCard(data) });
   }
 
-  // Safe fallback (In-memory + Writable tmp / seed)
-  const allCards = getLocalJobCards();
-  if (id) {
-    const card = allCards.find(c => c.id === id || c.job_card_number === id);
-    if (!card) {
-      return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
-    }
-    return NextResponse.json({ success: true, data: card });
-  }
+  const { data, error } = await supabaseServer
+    .from('job_cards')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-  return NextResponse.json({ success: true, data: allCards });
+  if (error) return databaseFailure(error);
+  return NextResponse.json({ success: true, data: data.map(normalizeJobCard) });
 }
 
 export async function POST(req: NextRequest) {
+  if (!isSupabaseServerConfigured || !supabaseServer) return databaseUnavailable();
+
   try {
     const body = await req.json();
-    const newId = body.id || `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
-    const now = new Date().toISOString();
+    if (!body.job_card_number || !body.customer_name || !body.plate_number) {
+      return NextResponse.json(
+        { error: 'Job card number, customer name, and plate number are required.' },
+        { status: 400 }
+      );
+    }
 
+    const now = new Date().toISOString();
     const normalized = normalizeJobCard({
       ...body,
-      id: newId,
-      job_card_number: body.job_card_number || newId,
+      job_card_number: body.job_card_number,
       created_at: body.created_at || now,
       updated_at: now,
     });
-
-    // Save to Supabase if configured
-    if (isSupabaseServerConfigured && supabaseServer) {
-      try {
-        await supabaseServer.from('job_cards').insert([normalized]);
-      } catch (err) {
-        console.warn('Supabase POST insert failed:', err);
-      }
+    const { id: _clientId, ...insertPayload } = normalized;
+    if (typeof body.id === 'string' && UUID_PATTERN.test(body.id)) {
+      Object.assign(insertPayload, { id: body.id });
     }
 
-    // Always update local storage safely
-    const cards = [...getLocalJobCards()];
-    const existingIdx = cards.findIndex(c => c.id === normalized.id || c.job_card_number === normalized.job_card_number);
-    if (existingIdx >= 0) {
-      cards[existingIdx] = normalized;
-    } else {
-      cards.unshift(normalized);
-    }
-    saveLocalJobCards(cards);
+    const { data, error } = await supabaseServer
+      .from('job_cards')
+      .insert(insertPayload)
+      .select('*')
+      .single();
 
-    return NextResponse.json({ success: true, data: normalized });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to save job card' }, { status: 500 });
+    if (error) return databaseFailure(error);
+    return NextResponse.json(
+      { success: true, data: normalizeJobCard(data) },
+      { status: 201 }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid request body.';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
 export async function PUT(req: NextRequest) {
+  if (!isSupabaseServerConfigured || !supabaseServer) return databaseUnavailable();
+
   try {
     const body = await req.json();
-    if (!body.id && !body.job_card_number) {
-      return NextResponse.json({ error: 'Missing card identifier' }, { status: 400 });
+    const identifier = String(body.id || body.job_card_number || '');
+    if (!identifier) {
+      return NextResponse.json({ error: 'Missing job card identifier.' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
@@ -97,29 +110,21 @@ export async function PUT(req: NextRequest) {
       updated_at: now,
       ...(body.status === 'CLOSED_PAID' && !body.closed_at ? { closed_at: now } : {}),
     });
+    const { id: _clientId, ...updatePayload } = normalized;
+    const filter = idFilter(identifier);
 
-    if (isSupabaseServerConfigured && supabaseServer) {
-      try {
-        await supabaseServer
-          .from('job_cards')
-          .update(normalized)
-          .eq('id', normalized.id);
-      } catch (err) {
-        console.warn('Supabase PUT update failed:', err);
-      }
-    }
+    const { data, error } = await supabaseServer
+      .from('job_cards')
+      .update(updatePayload)
+      .eq(filter.column, filter.value)
+      .select('*')
+      .maybeSingle();
 
-    const cards = [...getLocalJobCards()];
-    const existingIdx = cards.findIndex(c => c.id === normalized.id || c.job_card_number === normalized.job_card_number);
-    if (existingIdx >= 0) {
-      cards[existingIdx] = normalized;
-    } else {
-      cards.unshift(normalized);
-    }
-    saveLocalJobCards(cards);
-
-    return NextResponse.json({ success: true, data: normalized });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Failed to update job card' }, { status: 500 });
+    if (error) return databaseFailure(error);
+    if (!data) return NextResponse.json({ error: 'Job card not found' }, { status: 404 });
+    return NextResponse.json({ success: true, data: normalizeJobCard(data) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid request body.';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

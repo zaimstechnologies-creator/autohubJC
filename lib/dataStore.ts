@@ -1,22 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { JobCard } from '@/types';
 
-// Bundled seed file in project (read-only on Vercel/serverless: /var/task/data/jobcards.json)
-const SEED_FILE = path.join(process.cwd(), 'data', 'jobcards.json');
-
-// Writable temporary directory on Vercel/AWS Lambda / Linux / Windows
-const TMP_FILE = path.join(os.tmpdir(), 'alshaheen_jobcards.json');
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __AL_SHAHEEN_JOBCARDS_CACHE: JobCard[] | undefined;
-}
-
 export function normalizeJobCard(item: any): JobCard {
-  const id = item.id || `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
-  const job_card_number = item.job_card_number || item.id || id;
+  const id = String(item.id || '');
+  const job_card_number = String(item.job_card_number || item.id || '');
   const customer_name = item.customer_name || item.customer?.name || 'Walk-in Customer';
   const customer_phone = item.customer_phone || item.customer?.phone || '';
   const customer_address = item.customer_address || item.customer?.address || '';
@@ -119,75 +105,4 @@ export function normalizeJobCard(item: any): JobCard {
     updated_at: item.updated_at || item.updatedAt || new Date().toISOString(),
     closed_at: item.closed_at || item.closedAt || null,
   };
-}
-
-export function getLocalJobCards(): JobCard[] {
-  // 1. Check in-memory process cache first
-  if (globalThis.__AL_SHAHEEN_JOBCARDS_CACHE && globalThis.__AL_SHAHEEN_JOBCARDS_CACHE.length > 0) {
-    return globalThis.__AL_SHAHEEN_JOBCARDS_CACHE;
-  }
-
-  // 2. Try reading from writable TMP_FILE
-  try {
-    if (fs.existsSync(TMP_FILE)) {
-      const raw = fs.readFileSync(TMP_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const normalized = parsed.map(normalizeJobCard);
-        globalThis.__AL_SHAHEEN_JOBCARDS_CACHE = normalized;
-        return normalized;
-      }
-    }
-  } catch (err) {
-    console.warn('Could not read from tmp data file:', err);
-  }
-
-  // 3. Fallback to bundled SEED_FILE (read-only safe)
-  try {
-    if (fs.existsSync(SEED_FILE)) {
-      const raw = fs.readFileSync(SEED_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const normalized = parsed.map(normalizeJobCard);
-        globalThis.__AL_SHAHEEN_JOBCARDS_CACHE = normalized;
-
-        // Populate TMP_FILE for subsequent writes
-        try {
-          fs.writeFileSync(TMP_FILE, JSON.stringify(normalized, null, 2), 'utf-8');
-        } catch {
-          // Ignore write error if tmp is also restricted
-        }
-
-        return normalized;
-      }
-    }
-  } catch (err) {
-    console.warn('Could not read seed data file:', err);
-  }
-
-  return [];
-}
-
-export function saveLocalJobCards(cards: JobCard[]): void {
-  // 1. Always update in-memory cache
-  globalThis.__AL_SHAHEEN_JOBCARDS_CACHE = cards;
-
-  // 2. Write to writable TMP_FILE (always safe on Vercel / serverless)
-  try {
-    fs.writeFileSync(TMP_FILE, JSON.stringify(cards, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Warning: Could not write to tmp data file:', err);
-  }
-
-  // 3. In local development only (NOT on Vercel serverless), write to project data file
-  if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
-    try {
-      if (!fs.existsSync(path.dirname(SEED_FILE))) {
-        fs.mkdirSync(path.dirname(SEED_FILE), { recursive: true });
-      }
-      fs.writeFileSync(SEED_FILE, JSON.stringify(cards, null, 2), 'utf-8');
-    } catch {
-      // Silently catch EROFS or permission errors so they NEVER crash the app
-    }
-  }
 }

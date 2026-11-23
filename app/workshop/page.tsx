@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   JobCard,
   BayCategory,
@@ -42,16 +42,22 @@ export default function WorkshopDashboard() {
   const [lockedCardIds, setLockedCardIds] = useState<Set<string>>(new Set());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
+  const loadErrorShownRef = useRef(false);
   // Fetch job cards
   const loadJobCards = async () => {
     try {
       const res = await fetch('/api/jobcards', { cache: 'no-store' });
-      if (res.ok) {
-        const json = await res.json();
-        setJobCards(json.data || []);
-      }
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to load job cards.');
+      if (!Array.isArray(json.data)) throw new Error('Job-card response was invalid.');
+      setJobCards(json.data);
+      loadErrorShownRef.current = false;
     } catch (err) {
       console.error('Failed to load cards:', err);
+      if (!loadErrorShownRef.current) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load job cards.');
+        loadErrorShownRef.current = true;
+      }
     } finally {
       setLoading(false);
     }
