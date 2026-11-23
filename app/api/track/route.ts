@@ -3,12 +3,19 @@ import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServer
 import { PublicVehicleStatus } from '@/types';
 import { getLocalJobCards } from '@/lib/dataStore';
 
+function trackResponse(body: object, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { 'Cache-Control': 'private, no-store' },
+  });
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const plateQuery = searchParams.get('plate');
 
   if (!plateQuery || plateQuery.trim().length === 0) {
-    return NextResponse.json({ error: 'Please enter a vehicle registration number.' }, { status: 400 });
+    return trackResponse({ error: 'Please enter a vehicle registration number.' }, 400);
   }
 
   const cleanQuery = plateQuery.toUpperCase().replace(/\s+/g, '');
@@ -21,7 +28,7 @@ export async function GET(req: NextRequest) {
       });
 
       if (!error && data && data.length > 0) {
-        return NextResponse.json({ success: true, data: data[0] });
+        return trackResponse({ success: true, data: data[0] });
       }
 
       // Safe fallback select
@@ -33,10 +40,10 @@ export async function GET(req: NextRequest) {
 
       if (!directErr && directData) {
         const match = directData.find((c: any) =>
-          c.plate_number.toUpperCase().replace(/\s+/g, '').includes(cleanQuery)
+          c.plate_number.toUpperCase().replace(/\s+/g, '') === cleanQuery
         );
         if (match) {
-          return NextResponse.json({ success: true, data: match as PublicVehicleStatus });
+          return trackResponse({ success: true, data: match as PublicVehicleStatus });
         }
       }
     } catch (err) {
@@ -56,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     const matchedCard = activeCards.find((c) => {
       const plate = (c.plate_number || '').toUpperCase().replace(/\s+/g, '');
-      return plate.includes(cleanQuery) || cleanQuery.includes(plate);
+      return plate === cleanQuery;
     });
 
     if (matchedCard) {
@@ -74,14 +81,14 @@ export async function GET(req: NextRequest) {
         created_at: matchedCard.created_at || new Date().toISOString(),
       };
 
-      return NextResponse.json({ success: true, data: safeResponse });
+      return trackResponse({ success: true, data: safeResponse });
     }
   } catch (err) {
     console.error('File-based track error:', err);
   }
 
-  return NextResponse.json(
+  return trackResponse(
     { error: `No active job card found for registration plate: ${plateQuery}` },
-    { status: 404 }
+    404
   );
 }

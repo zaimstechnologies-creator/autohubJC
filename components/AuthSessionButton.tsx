@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -10,7 +9,6 @@ interface AuthSessionButtonProps {
 }
 
 export default function AuthSessionButton({ fullWidth = false }: AuthSessionButtonProps) {
-  const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -34,7 +32,7 @@ export default function AuthSessionButton({ fullWidth = false }: AuthSessionButt
       }
 
       toast.success('Signed out successfully.');
-      router.replace('/login');
+      window.setTimeout(() => window.location.replace('/'), 500);
     } catch (signOutError) {
       console.error('Sign out failed:', signOutError);
       toast.error('Sign out failed. Please try again.');

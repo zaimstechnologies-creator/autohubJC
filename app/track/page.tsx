@@ -20,7 +20,6 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
-import AuthSessionButton from '@/components/AuthSessionButton';
 import { toast } from 'sonner';
 
 export default function CustomerTrackPage() {
@@ -105,7 +104,6 @@ export default function CustomerTrackPage() {
             <MessageCircle className="w-3.5 h-3.5" />
             <span>Advisor</span>
           </a>
-          <AuthSessionButton />
         </div>
       </header>
 

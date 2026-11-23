@@ -13,8 +13,12 @@ export async function middleware(request: NextRequest) {
     pathname === '/' ||
     pathname === '/tv' ||
     pathname === '/tv/' ||
+    pathname === '/track' ||
+    pathname === '/track/' ||
     pathname === '/login' ||
     pathname === '/api/tv/queue' ||
+    pathname === '/api/track' ||
+    pathname === '/api/track/' ||
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     isStaticAsset;

@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,7 +21,7 @@ function getPasswordError(value: string): string | undefined {
 
 function getAppRedirect(): string {
   const requested = new URLSearchParams(window.location.search).get('next');
-  if (!requested) return '/';
+  if (!requested) return '/workshop';
 
   try {
     const destination = new URL(requested, window.location.origin);
@@ -35,13 +34,12 @@ function getAppRedirect(): string {
       return `${destination.pathname}${destination.search}${destination.hash}`;
     }
   } catch {
-    return '/';
+    return '/workshop';
   }
-  return '/';
+  return '/workshop';
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -100,7 +98,7 @@ export default function LoginPage() {
       }
 
       toast.success('Signed in successfully.');
-      router.replace(getAppRedirect());
+      window.location.replace(getAppRedirect());
     } catch {
       toast.error('Unable to connect. Check your connection and try again.');
     } finally {
