@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
-import LoungeAudioEngine, { playWebAudioChime } from '@/components/LoungeAudioEngine';
+import LoungeAudioEngine from '@/components/LoungeAudioEngine';
 import {
   Radio,
   Activity,
@@ -24,6 +24,13 @@ type LoungeJobCard = Pick<
   | 'updated_at'
 >;
 
+const ANNOUNCEMENT_STATE_KEY = 'tv-announcement-state-v2';
+
+interface AnnouncementState {
+  pendingIds: string[];
+  completedIds: string[];
+}
+
 declare global {
   interface Window {
     onYouTubeIframeAPIReady?: () => void;
@@ -34,7 +41,6 @@ declare global {
 export default function LoungeTVPage() {
   const [jobCards, setJobCards] = useState<LoungeJobCard[]>([]);
   const [announcementQueue, setAnnouncementQueue] = useState<LoungeJobCard[]>([]);
-  const [announcedCardIds, setAnnouncedCardIds] = useState<Set<string>>(new Set());
   const [playlistId, setPlaylistId] = useState(
     process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID || 'PLfWI-z1AjtsA'
   );
@@ -44,19 +50,35 @@ export default function LoungeTVPage() {
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
 
   const playerRef = useRef<any>(null);
-  const initialLoadDone = useRef(false);
-  const announcedCardIdsRef = useRef<Set<string>>(new Set());
+  const announcementStateRef = useRef<AnnouncementState>({
+    pendingIds: [],
+    completedIds: [],
+  });
+
+  const saveAnnouncementState = (state: AnnouncementState) => {
+    announcementStateRef.current = state;
+    try {
+      localStorage.setItem(ANNOUNCEMENT_STATE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn('Could not persist TV announcement queue:', error);
+    }
+  };
 
   useEffect(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('tv-announced-ready-cards') || '[]');
-      if (Array.isArray(stored)) {
-        announcedCardIdsRef.current = new Set(
-          stored.filter((id): id is string => typeof id === 'string')
-        );
+      const stored = JSON.parse(localStorage.getItem(ANNOUNCEMENT_STATE_KEY) || 'null');
+      if (
+        stored &&
+        Array.isArray(stored.pendingIds) &&
+        Array.isArray(stored.completedIds)
+      ) {
+        announcementStateRef.current = {
+          pendingIds: stored.pendingIds.filter((id: unknown): id is string => typeof id === 'string'),
+          completedIds: stored.completedIds.filter((id: unknown): id is string => typeof id === 'string'),
+        };
       }
-    } catch (_) {
-      announcedCardIdsRef.current = new Set();
+    } catch (error) {
+      console.warn('Could not restore TV announcement queue:', error);
     }
   }, []);
 
@@ -143,49 +165,40 @@ export default function LoungeTVPage() {
       setJobCards(cards);
       setQueueStatus('live');
 
-      // Detect newly ready vehicles for announcement queue
       const readyVehicles = cards.filter((c) => c.status === 'READY_FOR_DELIVERY');
       const readyIds = new Set(readyVehicles.map((c) => c.id));
+      const currentState = announcementStateRef.current;
+      let pendingIds = currentState.pendingIds.filter((id) => readyIds.has(id));
+      let completedIds = currentState.completedIds.filter((id) => readyIds.has(id));
 
-      // Forget cards that are no longer ready so a later ready transition announces again.
-      const nextPersistedIds = new Set(
-        [...announcedCardIdsRef.current].filter((id) => readyIds.has(id))
-      );
-      if (nextPersistedIds.size !== announcedCardIdsRef.current.size) {
-        announcedCardIdsRef.current = nextPersistedIds;
-        setAnnouncedCardIds(nextPersistedIds);
-        try {
-          localStorage.setItem(
-            'tv-announced-ready-cards',
-            JSON.stringify([...nextPersistedIds])
-          );
-        } catch (_) {}
-      }
-
-      if (initialLoadDone.current) {
-        readyVehicles.forEach((c) => {
-          if (!announcedCardIdsRef.current.has(c.id)) {
-            setAnnouncementQueue((prev) => {
-              if (prev.some((item) => item.id === c.id)) return prev;
-              return [...prev, c];
-            });
-          }
-        });
+      if (readyVehicles.length === 0) {
+        pendingIds = [];
+        completedIds = [];
+      } else if (pendingIds.length === 0) {
+        // Start the next round only after the previous round has fully completed.
+        pendingIds = readyVehicles.map((card) => card.id);
+        completedIds = [];
       } else {
-        // Existing ready vehicles are remembered across refreshes.
-        const existingIds = new Set(readyVehicles.map((c) => c.id));
-        const persistedIds = new Set(announcedCardIdsRef.current);
-        const rememberedIds = new Set([...existingIds, ...persistedIds]);
-        setAnnouncedCardIds(rememberedIds);
-        announcedCardIdsRef.current = rememberedIds;
-        try {
-          localStorage.setItem(
-            'tv-announced-ready-cards',
-            JSON.stringify([...rememberedIds])
-          );
-        } catch (_) {}
-        initialLoadDone.current = true;
+        const cycleIds = new Set([...pendingIds, ...completedIds]);
+        pendingIds = [
+          ...pendingIds,
+          ...readyVehicles
+            .filter((card) => !cycleIds.has(card.id))
+            .map((card) => card.id),
+        ];
       }
+
+      const nextState = { pendingIds, completedIds };
+      if (JSON.stringify(nextState) !== JSON.stringify(currentState)) {
+        saveAnnouncementState(nextState);
+      }
+
+      const readyById = new Map(readyVehicles.map((card) => [card.id, card]));
+      setAnnouncementQueue(
+        pendingIds
+          .map((id) => readyById.get(id))
+          .filter((card): card is LoungeJobCard => Boolean(card))
+      );
     } catch (err) {
       console.error('TV queue fetch error:', err);
       setQueueStatus('error');
@@ -309,16 +322,14 @@ export default function LoungeTVPage() {
 
   const handleAnnouncementFinished = (cardId: string) => {
     setAnnouncementQueue((prev) => prev.filter((c) => c.id !== cardId));
-    const updated = new Set(announcedCardIdsRef.current);
-    updated.add(cardId);
-    announcedCardIdsRef.current = updated;
-    setAnnouncedCardIds(updated);
-    try {
-      localStorage.setItem(
-        'tv-announced-ready-cards',
-        JSON.stringify([...updated])
-      );
-    } catch (_) {}
+    const currentState = announcementStateRef.current;
+    const wasPending = currentState.pendingIds.includes(cardId);
+    saveAnnouncementState({
+      pendingIds: currentState.pendingIds.filter((id) => id !== cardId),
+      completedIds: wasPending && !currentState.completedIds.includes(cardId)
+        ? [...currentState.completedIds, cardId]
+        : currentState.completedIds,
+    });
   };
 
   // Filter Active Vehicles in Workshop (Non-Closed)

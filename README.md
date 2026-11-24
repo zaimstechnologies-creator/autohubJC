@@ -21,6 +21,7 @@ A comprehensive, screen-responsive workshop management application built for **A
     - **Ready for Collection Alert**: When marked ready, the car displays a glowing, pulsating emerald green badge:
       `✅ READY TO COLLECT — PLEASE PROCEED TO ACCOUNTS COUNTER`
     - **Audio Chime**: Automatic pleasant two-tone airport/hospital chime plays over TV speakers when any vehicle is marked ready!
+    - **Announcement Queue**: Announcements run one at a time; the pending queue survives refreshes in the same TV browser. After each full cycle, vehicles still marked ready are announced again. Mark a vehicle `CLOSED_PAID` with **Settle** after collection to remove it from future announcements.
   - **Right Side (38%) — Al Shaheen YouTube Channel & Shorts Player**:
     - Embedded video player that continuously plays your official YouTube channel videos and Shorts to keep waiting customers entertained.
     - Sound toggle (`🔊 Sound ON` / `🔇 Muted`), Next Video button, and YouTube Setup modal.
