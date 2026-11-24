@@ -46,7 +46,6 @@ export default function LoungeTVPage() {
   );
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
 
   const playerRef = useRef<any>(null);
@@ -110,9 +109,7 @@ export default function LoungeTVPage() {
   }, []);
 
   useEffect(() => {
-    const unlockAudio = async () => {
-      setIsAudioUnlocked(true);
-
+    const unlockAudio = () => {
       try {
         if (playerRef.current) {
           if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
@@ -139,12 +136,9 @@ export default function LoungeTVPage() {
       window.removeEventListener('keydown', unlockAudio);
     };
 
-    // Unlock silently; do not play a chime or change the video volume on click.
+    // Keep these listeners until a real user action unlocks browser audio.
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
-
-    // Best-effort startup attempt; browser autoplay policy may still require one interaction.
-    void unlockAudio();
 
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
@@ -257,11 +251,10 @@ export default function LoungeTVPage() {
                 try {
                   // Crucial: setLoop(true) tells the player to loop the whole playlist across all videos
                   event.target.setLoop(true);
+                  // Best-effort audible autoplay; Android kiosk browsers must allow it.
+                  event.target.unMute();
+                  event.target.setVolume(100);
                   event.target.playVideo();
-                  if (isAudioUnlocked) {
-                    event.target.unMute();
-                    event.target.setVolume(100);
-                  }
                 } catch (e) {
                   console.warn('YouTube onReady setup error:', e);
                 }
