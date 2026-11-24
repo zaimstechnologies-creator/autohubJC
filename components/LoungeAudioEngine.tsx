@@ -11,6 +11,7 @@ type AnnouncementJobCard = Pick<
 interface LoungeAudioEngineProps {
   queue: AnnouncementJobCard[];
   onAnnouncementComplete?: (cardId: string) => void;
+  onAudioError?: (message: string | null) => void;
   playerRef: React.MutableRefObject<any>;
 }
 
@@ -64,14 +65,20 @@ export function playWebAudioChime(): Promise<void> {
 export default function LoungeAudioEngine({
   queue,
   onAnnouncementComplete,
+  onAudioError,
   playerRef,
 }: LoungeAudioEngineProps) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
+  const failedCardIdRef = useRef<string | null>(null);
 
   const processQueue = useCallback(async () => {
-    if (isProcessingRef.current || queue.length === 0) return;
+    if (queue.length === 0) {
+      failedCardIdRef.current = null;
+      return;
+    }
+    if (isProcessingRef.current || failedCardIdRef.current === queue[0].id) return;
 
     isProcessingRef.current = true;
     const nextCard = queue[0];
@@ -86,10 +93,12 @@ export default function LoungeAudioEngine({
 
     try {
       if (!('speechSynthesis' in window)) {
-        if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+        failedCardIdRef.current = nextCard.id;
+        onAudioError?.('This browser does not support spoken announcements.');
         return;
       }
 
+      onAudioError?.(null);
       window.speechSynthesis.resume();
       const voices = window.speechSynthesis.getVoices();
       const preferred =
@@ -113,14 +122,17 @@ export default function LoungeAudioEngine({
       try {
         const audio = new Audio('/chime.mp3');
         await Promise.race([
-          audio.play().catch(() => playWebAudioChime()),
+          audio.play().catch((error) => {
+            console.warn('Browser blocked announcement chime playback:', error);
+            return playWebAudioChime();
+          }),
           new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
         ]);
       } catch (_) {
         await playWebAudioChime();
       }
 
-      await new Promise<void>((resolve) => {
+      const speechCompleted = await new Promise<boolean>((resolve) => {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(speechMessage);
         utterance.rate = 0.82;
@@ -131,41 +143,52 @@ export default function LoungeAudioEngine({
 
         let started = false;
         let finished = false;
-        const timeout = window.setTimeout(() => {
-          if (!finished) {
-            finished = true;
-            resolve();
+        const finish = (success: boolean) => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(startTimeout);
+          window.clearTimeout(speechTimeout);
+          resolve(success);
+        };
+        const startTimeout = window.setTimeout(() => {
+          if (!started) {
+            window.speechSynthesis.cancel();
+            finish(false);
           }
-        }, 12000);
+        }, 5000);
+        const speechTimeout = window.setTimeout(() => {
+          window.speechSynthesis.cancel();
+          finish(false);
+        }, 20000);
 
         utterance.onstart = () => {
           started = true;
         };
         utterance.onend = () => {
-          if (finished) return;
-          finished = true;
-          window.clearTimeout(timeout);
-          resolve();
+          finish(true);
         };
-        utterance.onerror = () => {
-          if (finished) return;
-          finished = true;
-          window.clearTimeout(timeout);
-          resolve();
+        utterance.onerror = (event) => {
+          console.error('Speech announcement failed:', event.error);
+          finish(false);
         };
 
         window.speechSynthesis.speak(utterance);
-        window.setTimeout(() => {
-          if (!started && !finished) {
-            finished = true;
-            window.clearTimeout(timeout);
-            resolve();
-          }
-        }, 1500);
       });
 
+      if (!speechCompleted) {
+        failedCardIdRef.current = nextCard.id;
+        onAudioError?.('The browser could not start speech. Check browser autoplay and Android Text-to-Speech settings.');
+        return;
+      }
+
+      failedCardIdRef.current = null;
+      onAudioError?.(null);
       await new Promise((resolve) => window.setTimeout(resolve, 800));
       if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+    } catch (error) {
+      console.error('Vehicle announcement failed:', error);
+      failedCardIdRef.current = nextCard.id;
+      onAudioError?.('The browser could not play the announcement audio.');
     } finally {
       try {
         if (playerRef.current?.setVolume) playerRef.current.setVolume(100);
@@ -176,7 +199,7 @@ export default function LoungeAudioEngine({
       setCurrentAnnouncementText(null);
       isProcessingRef.current = false;
     }
-  }, [queue, onAnnouncementComplete, playerRef]);
+  }, [queue, onAnnouncementComplete, onAudioError, playerRef]);
 
   useEffect(() => {
     if (queue.length > 0 && !isProcessingRef.current) {

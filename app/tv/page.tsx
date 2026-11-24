@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
 import LoungeAudioEngine from '@/components/LoungeAudioEngine';
 import {
@@ -47,6 +47,7 @@ export default function LoungeTVPage() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
 
   const playerRef = useRef<any>(null);
   const announcementStateRef = useRef<AnnouncementState>({
@@ -62,6 +63,10 @@ export default function LoungeTVPage() {
       console.warn('Could not persist TV announcement queue:', error);
     }
   };
+
+  const handleAudioError = useCallback((message: string | null) => {
+    setAnnouncementError(message);
+  }, []);
 
   useEffect(() => {
     try {
@@ -342,7 +347,7 @@ export default function LoungeTVPage() {
 
   return (
     <div className="tv-lounge flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
-      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 lg:min-h-[76px] lg:flex-nowrap lg:px-8">
+      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 md:min-h-[76px] md:flex-nowrap md:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white p-1 shadow-sm sm:h-12 sm:w-[74px]">
             <img src="/logo.png" alt="Al Shaheen Auto Hub" className="h-full w-full object-contain" />
@@ -362,10 +367,11 @@ export default function LoungeTVPage() {
           </div>
         </div>
 
-        <div className="hidden items-center lg:flex">
+        <div className="hidden items-center md:flex">
           <LoungeAudioEngine
             queue={announcementQueue}
             onAnnouncementComplete={handleAnnouncementFinished}
+            onAudioError={handleAudioError}
             playerRef={playerRef}
           />
         </div>
@@ -384,8 +390,8 @@ export default function LoungeTVPage() {
         </div>
       </header>
 
-      <main className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:overflow-hidden">
-        <section className="relative min-h-[38vh] overflow-hidden border-b border-white/[0.08] bg-[radial-gradient(ellipse_at_center,_#182338_0%,_#070b12_70%)] lg:min-h-0 lg:border-b-0 lg:border-r">
+      <main className="tv-main-layout grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-[minmax(0,44%)_minmax(0,56%)] md:overflow-hidden">
+        <section className="relative min-h-[38vh] overflow-hidden border-b border-white/[0.08] bg-[radial-gradient(ellipse_at_center,_#182338_0%,_#070b12_70%)] md:min-h-0 md:border-b-0 md:border-r">
           <div id="youtube-player-container" className="absolute inset-0" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20" />
           <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/75 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-100 shadow-lg backdrop-blur-md sm:left-6 sm:top-6 sm:text-xs">
@@ -396,7 +402,7 @@ export default function LoungeTVPage() {
           </div>
         </section>
 
-        <section className="flex min-h-[48vh] min-w-0 flex-col overflow-hidden bg-[#0b1321] lg:min-h-0">
+        <section className="flex min-h-[48vh] min-w-0 flex-col overflow-hidden bg-[#0b1321] md:min-h-0">
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0d1727] px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10">
@@ -417,7 +423,7 @@ export default function LoungeTVPage() {
                     }`}
                   />
                   {queueStatus === 'live'
-                    ? 'Updates every 6 seconds'
+                    ? 'Updates every 2 seconds'
                     : queueStatus === 'error'
                       ? 'Connection interrupted'
                       : 'Connecting to workshop'}
@@ -437,6 +443,15 @@ export default function LoungeTVPage() {
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5 xl:p-6">
+            {announcementError && (
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-400/25 bg-rose-400/[0.08] px-4 py-3 text-xs text-rose-200"
+              >
+                Announcement paused: {announcementError}
+              </div>
+            )}
+
             {queueStatus === 'error' && displayQueue.length > 0 && (
               <div
                 role="status"

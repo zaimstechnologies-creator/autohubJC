@@ -60,6 +60,23 @@ body {
   }
 }
 
+@media (orientation: landscape) and (min-width: 700px) and (min-height: 500px) {
+  .tv-lounge .tv-main-layout {
+    grid-template-columns: minmax(0, 44%) minmax(0, 56%);
+    overflow: hidden;
+  }
+
+  .tv-lounge .tv-main-layout > section:first-child {
+    min-height: 0;
+    border-bottom: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .tv-lounge .tv-main-layout > section:last-child {
+    min-height: 0;
+  }
+}
+
 .print-page-frame {
   box-sizing: border-box;
   width: 210mm;
