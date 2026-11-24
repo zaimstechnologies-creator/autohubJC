@@ -72,13 +72,11 @@ function mergeDiagnosisScope(
 
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
   const [formData, setFormData] = useState<JobCard>(() => {
-    const jobCardNumber =
-      initialData?.job_card_number || `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
     const now = new Date().toISOString();
 
     return {
       id: initialData?.id || '',
-      job_card_number: jobCardNumber,
+      job_card_number: initialData?.job_card_number || '',
       customer_name: initialData?.customer_name || '',
       customer_phone: initialData?.customer_phone || '',
       customer_address: initialData?.customer_address || 'Lahore, Pakistan',
@@ -151,6 +149,15 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           null
   );
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (formData.job_card_number) return;
+
+    const jobCardNumber = `ASH-${Math.floor(100000 + Math.random() * 900000)}`;
+    setFormData((prev) =>
+      prev.job_card_number ? prev : { ...prev, job_card_number: jobCardNumber }
+    );
+  }, [formData.job_card_number]);
 
   // Recalculate financial balances whenever parts or rates change
   useEffect(() => {

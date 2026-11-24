@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
+import { getSupabaseJobCardsErrorMessage } from '@/lib/supabaseErrorMessage';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VALID_STATUSES = new Set(['INTAKE', 'IN_PROGRESS', 'READY_FOR_DELIVERY', 'CLOSED_PAID']);
@@ -54,9 +55,10 @@ export async function PATCH(req: NextRequest) {
 
     const { data, error } = await query.select('*').maybeSingle();
     if (error) {
-      console.error('Supabase job-card status update failed:', error.message);
+      const message = getSupabaseJobCardsErrorMessage(error);
+      console.error('Supabase job-card status update failed:', message);
       return NextResponse.json(
-        { error: `Supabase job_cards update failed: ${error.message}` },
+        { error: message },
         { status: 503 }
       );
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
+import { getSupabaseJobCardsErrorMessage } from '@/lib/supabaseErrorMessage';
 import { PublicVehicleStatus } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -46,9 +47,10 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Supabase public tracking query failed:', error.message);
+    const message = getSupabaseJobCardsErrorMessage(error);
+    console.error('Supabase public tracking query failed:', message);
     return trackResponse(
-      { error: `Supabase job_cards query failed: ${error.message}` },
+      { error: message },
       503
     );
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
 import { normalizeJobCard } from '@/lib/dataStore';
+import { getSupabaseJobCardsErrorMessage } from '@/lib/supabaseErrorMessage';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +15,10 @@ function databaseUnavailable() {
 }
 
 function databaseFailure(error: { message: string }) {
-  console.error('Job-card database request failed:', error.message);
+  const message = getSupabaseJobCardsErrorMessage(error);
+  console.error('Job-card database request failed:', message);
   return NextResponse.json(
-    { error: `Supabase job_cards request failed: ${error.message}` },
+    { error: message },
     { status: 503 }
   );
 }

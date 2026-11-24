@@ -43,8 +43,9 @@ export default function WorkshopDashboard() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
   const loadErrorShownRef = useRef(false);
+  const loadFailureCountRef = useRef(0);
   // Fetch job cards
-  const loadJobCards = async () => {
+  const loadJobCards = async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/jobcards', { cache: 'no-store' });
       const json = await res.json();
@@ -52,21 +53,40 @@ export default function WorkshopDashboard() {
       if (!Array.isArray(json.data)) throw new Error('Job-card response was invalid.');
       setJobCards(json.data);
       loadErrorShownRef.current = false;
+      loadFailureCountRef.current = 0;
+      return true;
     } catch (err) {
       console.error('Failed to load cards:', err);
+      loadFailureCountRef.current += 1;
       if (!loadErrorShownRef.current) {
         toast.error(err instanceof Error ? err.message : 'Failed to load job cards.');
         loadErrorShownRef.current = true;
       }
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadJobCards();
-    const timer = setInterval(loadJobCards, 8000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+
+    const poll = async () => {
+      const loaded = await loadJobCards();
+      if (cancelled) return;
+
+      const retryDelay = loaded
+        ? 8000
+        : Math.min(60000, 8000 * 2 ** Math.min(loadFailureCountRef.current, 3));
+      timer = setTimeout(poll, retryDelay);
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   // Mutex Lock helper

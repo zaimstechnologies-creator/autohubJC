@@ -164,3 +164,5 @@ $$;
 REVOKE ALL ON FUNCTION get_public_vehicle_status(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_public_vehicle_status(TEXT)
   TO service_role;
+
+NOTIFY pgrst, 'reload schema';

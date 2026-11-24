@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServerClient';
+import { getSupabaseJobCardsErrorMessage } from '@/lib/supabaseErrorMessage';
 import type { JobCard } from '@/types';
 
 type LoungeJobCard = Pick<
@@ -52,9 +53,10 @@ export async function GET() {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Supabase TV queue query failed:', error.message);
+    const message = getSupabaseJobCardsErrorMessage(error);
+    console.error('Supabase TV queue query failed:', message);
     return NextResponse.json(
-      { error: `Supabase job_cards query failed: ${error.message}` },
+      { error: message },
       { status: 503, headers: { 'Cache-Control': 'no-store' } }
     );
   }
