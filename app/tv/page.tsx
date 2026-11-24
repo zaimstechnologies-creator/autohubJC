@@ -49,7 +49,6 @@ export default function LoungeTVPage() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
-  const [announcementError, setAnnouncementError] = useState<string | null>(null);
 
   const playerRef = useRef<any>(null);
   const announcementStateRef = useRef<AnnouncementState>({
@@ -66,10 +65,6 @@ export default function LoungeTVPage() {
       console.warn('Could not persist TV announcement queue:', error);
     }
   };
-
-  const handleAudioError = useCallback((message: string | null) => {
-    setAnnouncementError(message);
-  }, []);
 
   useEffect(() => {
     try {
@@ -133,17 +128,6 @@ export default function LoungeTVPage() {
         console.warn('Automatic audio unlock error:', err);
       }
 
-      try {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.resume();
-          const silentUtterance = new SpeechSynthesisUtterance(' ');
-          silentUtterance.volume = 0;
-          window.speechSynthesis.speak(silentUtterance);
-        }
-      } catch (err) {
-        console.warn('Automatic speech unlock error:', err);
-      }
-
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
@@ -178,12 +162,21 @@ export default function LoungeTVPage() {
       let completedIds = currentState.completedIds.filter((id) => readyIds.has(id));
       let nextAnnouncementAt = currentState.nextAnnouncementAt;
 
+      const newlyReadyIds = readyVehicles
+        .filter((card) => !pendingIds.includes(card.id) && !completedIds.includes(card.id))
+        .map((card) => card.id);
+
       if (readyVehicles.length === 0) {
         pendingIds = [];
         completedIds = [];
         nextAnnouncementAt = null;
       } else if (pendingIds.length === 0) {
-        if (!nextAnnouncementAt || Date.now() >= nextAnnouncementAt) {
+        // Announce a vehicle that has just become ready immediately. The repeat
+        // delay only applies when there are no new vehicles to announce.
+        if (newlyReadyIds.length > 0) {
+          pendingIds = newlyReadyIds;
+          nextAnnouncementAt = null;
+        } else if (!nextAnnouncementAt || Date.now() >= nextAnnouncementAt) {
           pendingIds = readyVehicles.map((card) => card.id);
           completedIds = [];
           nextAnnouncementAt = null;
@@ -389,7 +382,6 @@ export default function LoungeTVPage() {
           <LoungeAudioEngine
             queue={announcementQueue}
             onAnnouncementComplete={handleAnnouncementFinished}
-            onAudioError={handleAudioError}
             playerRef={playerRef}
           />
         </div>
@@ -461,15 +453,6 @@ export default function LoungeTVPage() {
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5 xl:p-6">
-            {announcementError && (
-              <div
-                role="alert"
-                className="rounded-xl border border-rose-400/25 bg-rose-400/[0.08] px-4 py-3 text-xs text-rose-200"
-              >
-                Announcement paused: {announcementError}
-              </div>
-            )}
-
             {queueStatus === 'error' && displayQueue.length > 0 && (
               <div
                 role="status"

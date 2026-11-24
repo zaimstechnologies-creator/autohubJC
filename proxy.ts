@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSessionCookie, verifySessionToken } from '@/lib/session';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isStaticAsset =
     pathname.startsWith('/_next/') ||
     (!pathname.startsWith('/api/') &&
-      /\.(?:png|jpe?g|svg|webp|gif|ico|woff2?|ttf|otf|mp3|mp4|webm|pdf)$/i.test(
+      /\.(?:png|jpe?g|svg|webp|gif|ico|woff2?|ttf|otf|mp3|wav|m4a|aac|mp4|webm|pdf)$/i.test(
         pathname
       ));
   const isPublicRoute =

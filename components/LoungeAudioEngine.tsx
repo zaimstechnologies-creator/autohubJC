@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { JobCard } from '@/types';
 
 type AnnouncementJobCard = Pick<
@@ -11,195 +11,129 @@ type AnnouncementJobCard = Pick<
 interface LoungeAudioEngineProps {
   queue: AnnouncementJobCard[];
   onAnnouncementComplete?: (cardId: string) => void;
-  onAudioError?: (message: string | null) => void;
   playerRef: React.MutableRefObject<any>;
 }
 
-export function playWebAudioChime(): Promise<void> {
-  return new Promise((resolve) => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) {
-        resolve();
-        return;
-      }
-      const ctx = new AudioCtx();
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+const VOICE_PATH = '/voice';
+const FIXED_CLIPS = ['attention-please', 'registration-number'] as const;
+const ENDING_CLIPS = ['ready-for-delivery', 'proceed-accounts', 'thank-you'] as const;
 
-      const now = ctx.currentTime;
-      // 3-tone harmonic elevator / airport chime: C5 (523.25), E5 (659.25), G5 (783.99)
-      const freqs = [523.25, 659.25, 783.99];
-      freqs.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+function getAnnouncementClips(plateNumber?: string | null) {
+  const plateClips = (plateNumber || '').toLowerCase().match(/[a-z0-9]/g) || [];
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.18);
+  return plateClips.length > 0
+    ? [...FIXED_CLIPS, ...plateClips, ...ENDING_CLIPS]
+    : ['attention-please', 'ready-for-delivery', ...ENDING_CLIPS.slice(1)];
+}
 
-        gain.gain.setValueAtTime(0, now + idx * 0.18);
-        gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.18 + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.18 + 0.7);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + idx * 0.18);
-        osc.stop(now + idx * 0.18 + 0.75);
-      });
-
-      setTimeout(() => {
-        try {
-          ctx.close();
-        } catch (_) {}
-        resolve();
-      }, 900);
-    } catch (err) {
-      console.warn('Web Audio chime fallback error:', err);
+function playClip(audio: HTMLAudioElement, clip: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const finish = () => {
+      audio.onended = null;
+      audio.onerror = null;
       resolve();
-    }
+    };
+    const fail = () => {
+      audio.onended = null;
+      audio.onerror = null;
+      reject(new Error(`Could not play voice clip: ${clip}`));
+    };
+
+    audio.pause();
+    audio.currentTime = 0;
+    audio.src = `${VOICE_PATH}/${clip}.wav`;
+    audio.onended = finish;
+    audio.onerror = fail;
+    audio.play().catch(fail);
   });
 }
 
 export default function LoungeAudioEngine({
   queue,
   onAnnouncementComplete,
-  onAudioError,
   playerRef,
 }: LoungeAudioEngineProps) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessingRef = useRef(false);
-  const failedCardIdRef = useRef<string | null>(null);
+  const retryAfterRef = useRef(0);
+
+  // A single HTMLAudioElement is retained for every clip. A real user gesture once
+  // unlocks later automatic playback on kiosk and Android TV browsers.
+  useEffect(() => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
+    const unlockAudio = () => {
+      audio.src = `${VOICE_PATH}/attention-please.wav`;
+      audio.volume = 0;
+      audio.play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 1;
+          retryAfterRef.current = 0;
+        })
+        .catch(() => {
+          audio.volume = 1;
+        });
+    };
+
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, []);
 
   const processQueue = useCallback(async () => {
     if (queue.length === 0) {
-      failedCardIdRef.current = null;
       return;
     }
-    if (isProcessingRef.current || failedCardIdRef.current === queue[0].id) return;
+    if (isProcessingRef.current || Date.now() < retryAfterRef.current) return;
+
+    const audio = audioRef.current;
+    if (!audio) return;
 
     isProcessingRef.current = true;
     const nextCard = queue[0];
-    const isWash = nextCard.bay_category === 'CAR_WASH';
-    const bayTitle = isWash ? `Car Wash Bay ${nextCard.bay_number}` : `Workshop Bay ${nextCard.bay_number}`;
-    const vehicleName = nextCard.make_model?.trim() || 'vehicle';
     const plateNumber = nextCard.plate_number?.trim();
-    const registration = plateNumber
-      ? `Registration number ${plateNumber.split('').join(' ')}`
-      : 'The vehicle';
-    const speechMessage = `Attention please. ${registration}, ${vehicleName}, is now ready for delivery. Please proceed to the accounts counter. Thank you.`;
 
     try {
-      if (!('speechSynthesis' in window)) {
-        failedCardIdRef.current = nextCard.id;
-        onAudioError?.('This browser does not support spoken announcements.');
-        return;
-      }
-
-      onAudioError?.(null);
-      window.speechSynthesis.resume();
-      const voices = window.speechSynthesis.getVoices();
-      const preferred =
-        voices.find((v) =>
-          v.lang?.toLowerCase().startsWith('en') &&
-          /natural|neural|google us|jenny|aria|samantha|david|zira/i.test(v.name)
-        ) ||
-        voices.find((v) => v.lang?.toLowerCase().startsWith('en-us')) ||
-        voices.find((v) => v.lang?.toLowerCase().startsWith('en'));
-
       setIsAnnouncing(true);
-      setCurrentAnnouncementText(`Announcing: ${nextCard.make_model || 'Vehicle'} - ${bayTitle}`);
-
-      // Only duck after speech support is confirmed.
-      try {
-        if (playerRef.current?.setVolume) playerRef.current.setVolume(35);
-      } catch (err) {
-        console.warn('Could not duck YouTube volume:', err);
-      }
+      setCurrentAnnouncementText(`Announcing: ${plateNumber || nextCard.make_model || 'Vehicle'}`);
 
       try {
-        const audio = new Audio('/chime.mp3');
-        await Promise.race([
-          audio.play().catch((error) => {
-            console.warn('Browser blocked announcement chime playback:', error);
-            return playWebAudioChime();
-          }),
-          new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
-        ]);
-      } catch (_) {
-        await playWebAudioChime();
+        playerRef.current?.setVolume?.(35);
+      } catch (error) {
+        console.warn('Could not lower lounge music volume:', error);
       }
 
-      const speechCompleted = await new Promise<boolean>((resolve) => {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(speechMessage);
-        utterance.rate = 0.82;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        utterance.lang = 'en-US';
-        if (preferred) utterance.voice = preferred;
-
-        let started = false;
-        let finished = false;
-        const finish = (success: boolean) => {
-          if (finished) return;
-          finished = true;
-          window.clearTimeout(startTimeout);
-          window.clearTimeout(speechTimeout);
-          resolve(success);
-        };
-        const startTimeout = window.setTimeout(() => {
-          if (!started) {
-            window.speechSynthesis.cancel();
-            finish(false);
-          }
-        }, 5000);
-        const speechTimeout = window.setTimeout(() => {
-          window.speechSynthesis.cancel();
-          finish(false);
-        }, 20000);
-
-        utterance.onstart = () => {
-          started = true;
-        };
-        utterance.onend = () => {
-          finish(true);
-        };
-        utterance.onerror = (event) => {
-          console.error('Speech announcement failed:', event.error);
-          finish(false);
-        };
-
-        window.speechSynthesis.speak(utterance);
-      });
-
-      if (!speechCompleted) {
-        failedCardIdRef.current = nextCard.id;
-        onAudioError?.('The browser could not start speech. Check browser autoplay and Android Text-to-Speech settings.');
-        return;
+      for (const clip of getAnnouncementClips(plateNumber)) {
+        await playClip(audio, clip);
       }
 
-      failedCardIdRef.current = null;
-      onAudioError?.(null);
-      await new Promise((resolve) => window.setTimeout(resolve, 800));
-      if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+      onAnnouncementComplete?.(nextCard.id);
     } catch (error) {
-      console.error('Vehicle announcement failed:', error);
-      failedCardIdRef.current = nextCard.id;
-      onAudioError?.('The browser could not play the announcement audio.');
+      // Keep the vehicle in the queue and retry automatically without filling the
+      // terminal with errors if a TV browser temporarily blocks media playback.
+      retryAfterRef.current = Date.now() + 10_000;
     } finally {
       try {
-        if (playerRef.current?.setVolume) playerRef.current.setVolume(100);
-      } catch (err) {
-        console.warn('Could not restore YouTube volume:', err);
+        playerRef.current?.setVolume?.(100);
+      } catch (error) {
+        console.warn('Could not restore lounge music volume:', error);
       }
       setIsAnnouncing(false);
       setCurrentAnnouncementText(null);
       isProcessingRef.current = false;
     }
-  }, [queue, onAnnouncementComplete, onAudioError, playerRef]);
+  }, [onAnnouncementComplete, playerRef, queue]);
 
   useEffect(() => {
     if (queue.length > 0 && !isProcessingRef.current) {
@@ -212,7 +146,7 @@ export default function LoungeAudioEngine({
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 text-xs font-semibold animate-pulse shadow-lg">
       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-      <span>{currentAnnouncementText || 'Broadcasting Delivery Announcement...'}</span>
+      <span>{currentAnnouncementText || 'Broadcasting delivery announcement...'}</span>
     </div>
   );
 }
