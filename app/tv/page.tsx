@@ -545,6 +545,16 @@ export default function LoungeTVPage() {
                       <h3 className="truncate text-sm font-bold tracking-tight text-white sm:text-base">
                         {card.make_model} {card.variant ? `(${card.variant})` : ''}
                       </h3>
+                      {card.plate_number?.trim() && (
+                        <div className="mt-1.5 inline-flex items-center gap-2 rounded-md border border-white/10 bg-slate-950/50 px-2.5 py-1">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                            Plate
+                          </span>
+                          <span className="font-mono text-xs font-bold tracking-widest text-amber-100 sm:text-sm">
+                            {card.plate_number.trim()}
+                          </span>
+                        </div>
+                      )}
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-400 sm:text-xs">
                         <span
                           className={`rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wide sm:text-[10px] ${

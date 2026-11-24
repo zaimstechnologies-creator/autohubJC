@@ -26,7 +26,7 @@ A comprehensive, screen-responsive workshop management application built for **A
     - Embedded video player that continuously plays your official YouTube channel videos and Shorts to keep waiting customers entertained.
     - Sound toggle (`🔊 Sound ON` / `🔇 Muted`), Next Video button, and YouTube Setup modal.
   - **Bottom Ticker**: Running marquee announcement with lounge Wi-Fi password, complimentary tea/coffee reminders, and workshop helpline.
-  - **TV Remote / Kiosk**: Open the lounge display directly without signing in. The public queue feed omits registration plates and job-card identifiers.
+  - **TV Remote / Kiosk**: Open the lounge display directly without signing in. The public queue feed includes vehicle registration plates and the limited status fields shown on the lounge screen; customer contact and financial details are not exposed.
 
 ### 2. 📱 Vehicle Tracking
 - **URL Route**: `/track` (sign-in required)
@@ -42,12 +42,12 @@ A comprehensive, screen-responsive workshop management application built for **A
   - One-click **Download / View Job Card A4 PDF** button.
 
 ### 3. 🔒 Application Login
-- Workshop management and customer vehicle tracking require a server-verified session. The home page and lounge TV are public; only the TV queue endpoint is also public, and it omits registration plates and job-card identifiers.
+- Workshop management and customer vehicle tracking require a server-verified session. The home page and lounge TV are public; the TV queue endpoint exposes only the vehicle and status fields needed for the lounge display, including registration plates, without customer contact or financial details.
 - After signing in, workshop management and tracking are available in the same authenticated session.
 - Credentials are configured using server-only environment variables; no default username or password is shipped.
 
 ### 4. ⚡ Real-Time Cross-Screen Sync
-- Workshop data refreshes through authenticated APIs, and the lounge queue refreshes automatically every six seconds.
+- Workshop data refreshes through authenticated APIs, and the lounge queue refreshes automatically every six seconds. The public lounge display shows vehicle registration plates to help customers identify their vehicles.
 
 ### 5. 🤖 Gemini AI Diagnostics & Tablet Stylus Job Cards
 - Built-in Google Gemini AI automotive diagnosis engine (Free Tier compatible).
