@@ -26,10 +26,12 @@ type LoungeJobCard = Pick<
 >;
 
 const ANNOUNCEMENT_STATE_KEY = 'tv-announcement-state-v2';
+const ANNOUNCEMENT_REPEAT_DELAY_MS = 5 * 60 * 1000;
 
 interface AnnouncementState {
   pendingIds: string[];
   completedIds: string[];
+  nextAnnouncementAt: number | null;
 }
 
 declare global {
@@ -58,6 +60,7 @@ export default function LoungeTVPage() {
   const announcementStateRef = useRef<AnnouncementState>({
     pendingIds: [],
     completedIds: [],
+    nextAnnouncementAt: null,
   });
 
   const saveAnnouncementState = (state: AnnouncementState) => {
@@ -135,6 +138,10 @@ export default function LoungeTVPage() {
         announcementStateRef.current = {
           pendingIds: stored.pendingIds.filter((id: unknown): id is string => typeof id === 'string'),
           completedIds: stored.completedIds.filter((id: unknown): id is string => typeof id === 'string'),
+          nextAnnouncementAt:
+            typeof stored.nextAnnouncementAt === 'number' && Number.isFinite(stored.nextAnnouncementAt)
+              ? stored.nextAnnouncementAt
+              : null,
         };
       }
     } catch (error) {
@@ -201,14 +208,18 @@ export default function LoungeTVPage() {
       const currentState = announcementStateRef.current;
       let pendingIds = currentState.pendingIds.filter((id) => readyIds.has(id));
       let completedIds = currentState.completedIds.filter((id) => readyIds.has(id));
+      let nextAnnouncementAt = currentState.nextAnnouncementAt;
 
       if (readyVehicles.length === 0) {
         pendingIds = [];
         completedIds = [];
+        nextAnnouncementAt = null;
       } else if (pendingIds.length === 0) {
-        // Start the next round only after the previous round has fully completed.
-        pendingIds = readyVehicles.map((card) => card.id);
-        completedIds = [];
+        if (!nextAnnouncementAt || Date.now() >= nextAnnouncementAt) {
+          pendingIds = readyVehicles.map((card) => card.id);
+          completedIds = [];
+          nextAnnouncementAt = null;
+        }
       } else {
         const cycleIds = new Set([...pendingIds, ...completedIds]);
         pendingIds = [
@@ -217,9 +228,10 @@ export default function LoungeTVPage() {
             .filter((card) => !cycleIds.has(card.id))
             .map((card) => card.id),
         ];
+        nextAnnouncementAt = null;
       }
 
-      const nextState = { pendingIds, completedIds };
+      const nextState = { pendingIds, completedIds, nextAnnouncementAt };
       if (JSON.stringify(nextState) !== JSON.stringify(currentState)) {
         saveAnnouncementState(nextState);
       }
@@ -354,11 +366,17 @@ export default function LoungeTVPage() {
     setAnnouncementQueue((prev) => prev.filter((c) => c.id !== cardId));
     const currentState = announcementStateRef.current;
     const wasPending = currentState.pendingIds.includes(cardId);
+    const pendingIds = currentState.pendingIds.filter((id) => id !== cardId);
+    const completedIds = wasPending && !currentState.completedIds.includes(cardId)
+      ? [...currentState.completedIds, cardId]
+      : currentState.completedIds;
     saveAnnouncementState({
-      pendingIds: currentState.pendingIds.filter((id) => id !== cardId),
-      completedIds: wasPending && !currentState.completedIds.includes(cardId)
-        ? [...currentState.completedIds, cardId]
-        : currentState.completedIds,
+      pendingIds,
+      completedIds,
+      nextAnnouncementAt:
+        wasPending && pendingIds.length === 0
+          ? Date.now() + ANNOUNCEMENT_REPEAT_DELAY_MS
+          : currentState.nextAnnouncementAt,
     });
   };
 
