@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PublicVehicleStatus, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
 import {
   Search,
@@ -8,25 +8,24 @@ import {
   Clock,
   CheckCircle2,
   ShieldCheck,
-  Wrench,
-  Droplets,
-  Gauge,
-  Activity,
   Wifi,
   Coffee,
   MessageCircle,
-  Phone,
-  MapPin,
   RefreshCw,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+function formatUpdatedAt(value?: string) {
+  if (!value) return 'Not available';
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Not available' : date.toLocaleString();
+}
 
 export default function CustomerTrackPage() {
   const [plateInput, setPlateInput] = useState('');
   const [statusData, setStatusData] = useState<PublicVehicleStatus | null>(null);
   const [loading, setLoading] = useState(false);
-  const [lastChecked, setLastChecked] = useState<string | null>(null);
 
   const handleLookup = async (plateToSearch?: string) => {
     const query = plateToSearch || plateInput;
@@ -48,7 +47,6 @@ export default function CustomerTrackPage() {
         toast.error(json.error || `No active job card found for plate "${query.trim()}".`);
       } else {
         setStatusData(json.data);
-        setLastChecked(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         toast.success('Vehicle status found.');
       }
     } catch {
@@ -58,21 +56,17 @@ export default function CustomerTrackPage() {
     }
   };
 
-  // Determine stage (1 to 4)
-  const getStageNumber = (status: string) => {
-    if (status === 'INTAKE') return 1;
-    if (status === 'IN_PROGRESS') return 2;
-    if (status === 'READY_FOR_DELIVERY') return 4;
-    return 2;
-  };
-
-  const currentStage = statusData ? getStageNumber(statusData.status) : 1;
-
   const bayTitle = statusData
     ? statusData.bay_category === 'CAR_WASH'
       ? CAR_WASH_BAYS.find((b) => b.id === statusData.bay_number)?.name || `Wash Bay ${statusData.bay_number}`
       : WORKSHOP_BAYS.find((b) => b.id === statusData.bay_number)?.name || `Workshop Bay ${statusData.bay_number}`
     : 'Assigned Bay';
+
+  const statusLabel = statusData?.status === 'READY_FOR_DELIVERY'
+    ? 'READY FOR DELIVERY'
+    : statusData?.status === 'INTAKE'
+      ? 'VEHICLE RECEIVED'
+      : 'IN SERVICE';
 
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans pb-16">
@@ -122,7 +116,7 @@ export default function CustomerTrackPage() {
                 value={plateInput}
                 onChange={(e) => setPlateInput(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-                placeholder="Enter Plate No (e.g. AQP 007)"
+                placeholder="Enter your vehicle registration plate number"
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white uppercase font-mono font-bold tracking-wider placeholder-slate-600 focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -134,21 +128,6 @@ export default function CustomerTrackPage() {
             >
               <Search className="w-4 h-4" />
               {loading ? 'Tracking...' : 'Track'}
-            </button>
-          </div>
-
-          {/* Quick Demo Pill */}
-          <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500">
-            <span>Quick test:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setPlateInput('AQP 007');
-                handleLookup('AQP 007');
-              }}
-              className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono"
-            >
-              AQP 007
             </button>
           </div>
 
@@ -173,7 +152,7 @@ export default function CustomerTrackPage() {
                   type="button"
                   onClick={() => handleLookup()}
                   className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
-                  title="Refresh Telemetry"
+                  title="Refresh vehicle status"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
@@ -195,150 +174,53 @@ export default function CustomerTrackPage() {
                   )}
                   <div>
                     <div className="text-xs font-bold uppercase tracking-wide">
-                      {statusData.status === 'READY_FOR_DELIVERY'
-                        ? 'READY FOR DELIVERY'
-                        : 'IN PROGRESS / ACTIVE'}
+                      {statusLabel}
                     </div>
                     <div className="text-[10px] text-slate-400">
                       {statusData.status === 'READY_FOR_DELIVERY'
-                        ? 'Vehicle passed quality check & ready at gate'
-                        : `Currently undergoing service at ${bayTitle}`}
+                        ? 'The workshop has marked this vehicle ready for delivery.'
+                        : statusData.status === 'INTAKE'
+                          ? 'The workshop has recorded this vehicle as received.'
+                          : `Current assigned bay: ${bayTitle}`}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 4-Stage Visual Timeline */}
+            {/* Details returned from the public job-card status endpoint */}
             <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Activity className="w-4 h-4 text-sky-400" />
-                Service Progression Stages
+                <Car className="w-4 h-4 text-sky-400" />
+                Job Card Details
               </h3>
 
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
-                {/* Stage 1: Intake & Scan */}
-                <div className="relative">
-                  <span
-                    className={`absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      currentStage >= 1
-                        ? 'bg-emerald-500 text-slate-950 ring-4 ring-slate-900'
-                        : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    ✓
-                  </span>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">1. Intake & 360° Scan</h4>
-                    <p className="text-[10px] text-slate-400">
-                      Physical inspection completed, RO #{statusData.job_card_number} created.
-                    </p>
-                  </div>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Job card</span>
+                  <span className="font-mono font-semibold text-white">{statusData.job_card_number}</span>
                 </div>
-
-                {/* Stage 2: Active Bay Operations */}
-                <div className="relative">
-                  <span
-                    className={`absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      currentStage >= 2
-                        ? 'bg-amber-500 text-slate-950 ring-4 ring-slate-900 animate-pulse'
-                        : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    2
-                  </span>
-                  <div>
-                    <h4 className="text-xs font-bold text-amber-300">
-                      2. {bayTitle} (Active)
-                    </h4>
-                    <p className="text-[10px] text-slate-400">
-                      Department works:{' '}
-                      {statusData.departments?.join(', ') || 'Diagnostics & Servicing'}
-                    </p>
-                  </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Current status</span>
+                  <span className="font-semibold text-white">{statusLabel}</span>
                 </div>
-
-                {/* Stage 3: Quality Control Audit */}
-                <div className="relative">
-                  <span
-                    className={`absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      currentStage >= 4
-                        ? 'bg-emerald-500 text-slate-950 ring-4 ring-slate-900'
-                        : 'bg-slate-800 text-slate-500'
-                    }`}
-                  >
-                    3
-                  </span>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">3. Quality Control Audit</h4>
-                    <p className="text-[10px] text-slate-400">
-                      Road test, diagnostic health scan, exterior/interior cleaning sign-off.
-                    </p>
-                  </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Assigned bay</span>
+                  <span className="text-right text-white">{bayTitle}</span>
                 </div>
-
-                {/* Stage 4: Ready for Handover */}
-                <div className="relative">
-                  <span
-                    className={`absolute -left-6 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      currentStage >= 4
-                        ? 'bg-emerald-500 text-slate-950 ring-4 ring-slate-900 animate-bounce'
-                        : 'bg-slate-800 text-slate-500'
-                    }`}
-                  >
-                    4
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Departments</span>
+                  <span className="text-right text-white">
+                    {statusData.departments?.length
+                      ? statusData.departments.join(', ')
+                      : 'Not specified on the job card'}
                   </span>
-                  <div>
-                    <h4
-                      className={`text-xs font-bold ${
-                        currentStage >= 4 ? 'text-emerald-400' : 'text-slate-400'
-                      }`}
-                    >
-                      4. Ready for Handover & Gate Pass
-                    </h4>
-                    <p className="text-[10px] text-slate-400">
-                      Vehicle ready for collection at Al Shaheen customer delivery lounge.
-                    </p>
-                  </div>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Last workshop update</span>
+                  <span className="text-right text-white">{formatUpdatedAt(statusData.updated_at)}</span>
                 </div>
               </div>
-            </div>
-
-            {/* Bay Telemetry & Sensor Readouts */}
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-3">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Gauge className="w-4 h-4 text-amber-400" />
-                Live Bay Sensor Readouts
-              </h3>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Hydraulic Lift</span>
-                  <span className="font-mono font-bold text-emerald-400">218.4 BAR</span>
-                  <span className="text-[9px] text-slate-400 block">Pressure Locked</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Laser Camber</span>
-                  <span className="font-mono font-bold text-sky-400">-0.45° / -0.42°</span>
-                  <span className="text-[9px] text-slate-400 block">3D Hunter Aligned</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Wheel Torque</span>
-                  <span className="font-mono font-bold text-amber-400">112 NM</span>
-                  <span className="text-[9px] text-slate-400 block">Calibrated Target</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Active DTC Codes</span>
-                  <span className="font-mono font-bold text-purple-400">0 Faults</span>
-                  <span className="text-[9px] text-slate-400 block">OBD-II Clean</span>
-                </div>
-              </div>
-
-              {lastChecked && (
-                <div className="text-[10px] text-slate-500 text-right font-mono">
-                  Telemetry updated at {lastChecked}
-                </div>
-              )}
             </div>
 
             {/* Privacy Compliance Note */}
@@ -367,8 +249,7 @@ export default function CustomerTrackPage() {
               <div>
                 <div className="font-semibold text-white">Guest High-Speed Wi-Fi</div>
                 <div className="text-[10px] text-slate-400 font-mono">
-                  SSID: <span className="text-amber-300">AlShaheen_Guest</span> • Pass:{' '}
-                  <span className="text-amber-300">speed786</span>
+                  Ask the service advisor for guest Wi-Fi details.
                 </div>
               </div>
             </div>
