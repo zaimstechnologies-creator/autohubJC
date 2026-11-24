@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   Car,
+  Volume2,
 } from 'lucide-react';
 
 type LoungeJobCard = Pick<
@@ -48,8 +49,12 @@ export default function LoungeTVPage() {
   const [currentDate, setCurrentDate] = useState<string>('');
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
   const [announcementError, setAnnouncementError] = useState<string | null>(null);
+  const [audioButtonState, setAudioButtonState] = useState<'idle' | 'enabled' | 'error'>('idle');
+  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
+  const [audioUnlockVersion, setAudioUnlockVersion] = useState(0);
 
   const playerRef = useRef<any>(null);
+  const audioUnlockAttemptedRef = useRef(false);
   const announcementStateRef = useRef<AnnouncementState>({
     pendingIds: [],
     completedIds: [],
@@ -67,6 +72,57 @@ export default function LoungeTVPage() {
   const handleAudioError = useCallback((message: string | null) => {
     setAnnouncementError(message);
   }, []);
+
+  const unlockAudio = useCallback(() => {
+    if (audioUnlockAttemptedRef.current) return;
+    audioUnlockAttemptedRef.current = true;
+
+    try {
+      if (playerRef.current) {
+        if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
+        if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
+        if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
+        if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
+      }
+    } catch (err) {
+      console.warn('Automatic audio unlock error:', err);
+    }
+
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+        const silentUtterance = new SpeechSynthesisUtterance(' ');
+        silentUtterance.volume = 0;
+        window.speechSynthesis.speak(silentUtterance);
+      }
+    } catch (err) {
+      console.warn('Automatic speech unlock error:', err);
+    }
+  }, []);
+
+  const handleEnableAudio = useCallback(async () => {
+    unlockAudio();
+    const supportsSpeech = 'speechSynthesis' in window;
+    setSpeechSupported(supportsSpeech);
+
+    try {
+      const testChime = new Audio('/chime.mp3');
+      await testChime.play();
+      setAudioButtonState('enabled');
+      if (supportsSpeech) {
+        setAnnouncementError(null);
+        setAudioUnlockVersion((version) => version + 1);
+      } else {
+        setAnnouncementError(
+          'Audio is enabled, but this browser does not support spoken announcements.'
+        );
+      }
+    } catch (error) {
+      console.warn('TV audio test could not play:', error);
+      setAudioButtonState('error');
+      setAnnouncementError('Audio could not start. Check the TV volume and try Enable Audio again.');
+    }
+  }, [unlockAudio]);
 
   useEffect(() => {
     try {
@@ -114,42 +170,18 @@ export default function LoungeTVPage() {
   }, []);
 
   useEffect(() => {
-    const unlockAudio = () => {
-      try {
-        if (playerRef.current) {
-          if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
-          if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-          if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
-          if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
-        }
-      } catch (err) {
-        console.warn('Automatic audio unlock error:', err);
-      }
-
-      try {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.resume();
-          const silentUtterance = new SpeechSynthesisUtterance(' ');
-          silentUtterance.volume = 0;
-          window.speechSynthesis.speak(silentUtterance);
-        }
-      } catch (err) {
-        console.warn('Automatic speech unlock error:', err);
-      }
-
+    const removeUnlockListeners = () => {
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
 
-    // Keep these listeners until a real user action unlocks browser audio.
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
 
     return () => {
-      window.removeEventListener('pointerdown', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
+      removeUnlockListeners();
     };
-  }, []);
+  }, [unlockAudio]);
 
   // Fetch job cards
   const fetchCards = async () => {
@@ -373,10 +405,32 @@ export default function LoungeTVPage() {
             onAnnouncementComplete={handleAnnouncementFinished}
             onAudioError={handleAudioError}
             playerRef={playerRef}
+            audioUnlockVersion={audioUnlockVersion}
           />
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
+          <button
+            type="button"
+            onClick={handleEnableAudio}
+            aria-label="Enable and test TV audio"
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:text-xs ${
+              audioButtonState === 'enabled'
+                ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200'
+                : audioButtonState === 'error'
+                  ? 'border-rose-400/30 bg-rose-400/10 text-rose-200'
+                  : 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/10'
+            }`}
+          >
+            <Volume2 className="h-4 w-4" />
+            {audioButtonState === 'error'
+              ? 'Retry Audio'
+              : audioButtonState === 'enabled'
+                ? speechSupported
+                  ? 'Audio Enabled'
+                  : 'Chime OK'
+                : 'Enable Audio'}
+          </button>
           <div className="flex items-center gap-3 border-l border-white/10 pl-3 sm:pl-4">
             <div className="text-right">
               <div className="font-mono text-sm font-bold tabular-nums tracking-wide text-amber-300 sm:text-base">

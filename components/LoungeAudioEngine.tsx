@@ -13,6 +13,7 @@ interface LoungeAudioEngineProps {
   onAnnouncementComplete?: (cardId: string) => void;
   onAudioError?: (message: string | null) => void;
   playerRef: React.MutableRefObject<any>;
+  audioUnlockVersion: number;
 }
 
 export function playWebAudioChime(): Promise<void> {
@@ -67,11 +68,13 @@ export default function LoungeAudioEngine({
   onAnnouncementComplete,
   onAudioError,
   playerRef,
+  audioUnlockVersion,
 }: LoungeAudioEngineProps) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
   const failedCardIdRef = useRef<string | null>(null);
+  const previousAudioUnlockVersionRef = useRef(audioUnlockVersion);
 
   const processQueue = useCallback(async () => {
     if (queue.length === 0) {
@@ -202,10 +205,14 @@ export default function LoungeAudioEngine({
   }, [queue, onAnnouncementComplete, onAudioError, playerRef]);
 
   useEffect(() => {
+    if (audioUnlockVersion !== previousAudioUnlockVersionRef.current) {
+      failedCardIdRef.current = null;
+      previousAudioUnlockVersionRef.current = audioUnlockVersion;
+    }
     if (queue.length > 0 && !isProcessingRef.current) {
       processQueue();
     }
-  }, [queue, processQueue]);
+  }, [queue, processQueue, audioUnlockVersion]);
 
   if (!isAnnouncing && !currentAnnouncementText) return null;
 
