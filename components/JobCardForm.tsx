@@ -13,6 +13,8 @@ import {
 import CarBlueprint from './CarBlueprint';
 import { formatNumberedPoints } from '@/lib/diagnosisFormatting';
 import { detectDiagnosisLanguage } from '@/lib/diagnosisLanguage';
+import { createJobCardDraft } from '@/lib/jobCardDraft';
+import { calculateJobCardFinancials } from '@/lib/jobCardFinancials';
 import {
   Mic,
   MicOff,
@@ -32,9 +34,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import AuthSessionButton from '@/components/AuthSessionButton';
 
 interface JobCardFormProps {
-  initialData?: JobCard | null;
+  initialData?: Partial<JobCard> | null;
   onSaveSuccess?: (saved: JobCard) => void;
   onPrint?: (card: JobCard) => void;
 }
@@ -71,63 +74,7 @@ function mergeDiagnosisScope(
 }
 
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
-  const [formData, setFormData] = useState<JobCard>(() => {
-    const now = new Date().toISOString();
-
-    return {
-      id: initialData?.id || '',
-      job_card_number: initialData?.job_card_number || '',
-      customer_name: initialData?.customer_name || '',
-      customer_phone: initialData?.customer_phone || '',
-      customer_address: initialData?.customer_address || 'Lahore, Pakistan',
-      plate_number: initialData?.plate_number || '',
-      make_model: initialData?.make_model || '',
-      variant: initialData?.variant || '',
-      mileage_km: initialData?.mileage_km || 0,
-      body_color: initialData?.body_color || '',
-      service_advisor: initialData?.service_advisor || 'Advisor Incharge',
-      bay_category: initialData?.bay_category || 'WORKSHOP',
-      bay_number: initialData?.bay_number || 1,
-      status: initialData?.status || 'IN_PROGRESS',
-      fuel_level_percent: initialData?.fuel_level_percent ?? 50,
-      handed_over_inventory: {
-        spare_wheel: initialData?.handed_over_inventory?.spare_wheel ?? true,
-        tools: initialData?.handed_over_inventory?.tools ?? true,
-        mats: initialData?.handed_over_inventory?.mats ?? true,
-        valuables_cleared: initialData?.handed_over_inventory?.valuables_cleared ?? true,
-      },
-      inspection_markers: Array.isArray(initialData?.inspection_markers) ? initialData.inspection_markers : [],
-      customer_concern: initialData?.customer_concern || '',
-      ai_diagnosis_result: initialData?.ai_diagnosis_result || null,
-      work_to_be_done: initialData?.work_to_be_done || '',
-      departments: Array.isArray(initialData?.departments) && initialData.departments.length > 0
-        ? initialData.departments
-        : ['Mechanical'],
-      itemized_parts: Array.isArray(initialData?.itemized_parts) ? initialData.itemized_parts : [],
-      labor_charges: initialData?.labor_charges || 0,
-      alignment_charges: initialData?.alignment_charges || 0,
-      discount_amount: initialData?.discount_amount || 0,
-      advance_deposit: initialData?.advance_deposit || 0,
-      parts_total: initialData?.parts_total || 0,
-      net_payable: initialData?.net_payable || 0,
-      balance_remaining: initialData?.balance_remaining || 0,
-      quality_checks: {
-        exterior_clean: initialData?.quality_checks?.exterior_clean ?? false,
-        interior_clean: initialData?.quality_checks?.interior_clean ?? false,
-        engine_area_clean: initialData?.quality_checks?.engine_area_clean ?? false,
-        all_systems_checked: initialData?.quality_checks?.all_systems_checked ?? false,
-        test_drive_done: initialData?.quality_checks?.test_drive_done ?? false,
-        no_warning_lights: initialData?.quality_checks?.no_warning_lights ?? false,
-        work_completed: initialData?.quality_checks?.work_completed ?? false,
-        customer_satisfied: initialData?.quality_checks?.customer_satisfied ?? false,
-      },
-      received_by: initialData?.received_by || 'Staff Advisor',
-      delivered_by: initialData?.delivered_by || '',
-      created_at: initialData?.created_at || now,
-      updated_at: initialData?.updated_at || now,
-      closed_at: initialData?.closed_at || null,
-    };
-  });
+  const [formData, setFormData] = useState<JobCard>(() => createJobCardDraft(initialData));
 
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -161,23 +108,11 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
 
   // Recalculate financial balances whenever parts or rates change
   useEffect(() => {
-    const parts = formData.itemized_parts || [];
-    const partsTotal = parts.reduce(
-      (sum, p) => sum + (Number(p.amount) || 0),
-      0
-    );
-    const net =
-      partsTotal +
-      Number(formData.labor_charges || 0) +
-      Number(formData.alignment_charges || 0) -
-      Number(formData.discount_amount || 0);
-    const balance = Math.max(0, net - Number(formData.advance_deposit || 0));
+    const financials = calculateJobCardFinancials(formData);
 
     setFormData((prev) => ({
       ...prev,
-      parts_total: partsTotal,
-      net_payable: net,
-      balance_remaining: balance,
+      ...financials,
     }));
   }, [
     formData.itemized_parts,
@@ -507,6 +442,10 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Job Card'}
           </button>
+
+          <div className="ml-1 border-l border-slate-700/80 pl-2">
+            <AuthSessionButton />
+          </div>
         </div>
       </div>
 

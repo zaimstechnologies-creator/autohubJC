@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   JobCard,
   BayCategory,
@@ -32,63 +32,36 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useJobCards } from '@/hooks/useJobCards';
+
+const BUSINESS_TIME_ZONE = 'Asia/Karachi';
+
+function businessDateKey(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function formatHours(hours: number) {
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${hours.toFixed(1)} Hrs`;
+}
 
 export default function WorkshopDashboard() {
-  const [jobCards, setJobCards] = useState<JobCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { jobCards, loading, loadJobCards } = useJobCards();
   const [activeTab, setActiveTab] = useState<'matrix' | 'cards' | 'closed' | 'archive' | 'settings'>('matrix');
   const [selectedBayFilter, setSelectedBayFilter] = useState<'ALL' | 'WORKSHOP' | 'CAR_WASH'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [lockedCardIds, setLockedCardIds] = useState<Set<string>>(new Set());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
-  const loadErrorShownRef = useRef(false);
-  const loadFailureCountRef = useRef(0);
-  // Fetch job cards
-  const loadJobCards = async (): Promise<boolean> => {
-    try {
-      const res = await fetch('/api/jobcards', { cache: 'no-store' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to load job cards.');
-      if (!Array.isArray(json.data)) throw new Error('Job-card response was invalid.');
-      setJobCards(json.data);
-      loadErrorShownRef.current = false;
-      loadFailureCountRef.current = 0;
-      return true;
-    } catch (err) {
-      console.error('Failed to load cards:', err);
-      loadFailureCountRef.current += 1;
-      if (!loadErrorShownRef.current) {
-        toast.error(err instanceof Error ? err.message : 'Failed to load job cards.');
-        loadErrorShownRef.current = true;
-      }
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    let cancelled = false;
-
-    const poll = async () => {
-      const loaded = await loadJobCards();
-      if (cancelled) return;
-
-      const retryDelay = loaded
-        ? 8000
-        : Math.min(60000, 8000 * 2 ** Math.min(loadFailureCountRef.current, 3));
-      timer = setTimeout(poll, retryDelay);
-    };
-
-    void poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, []);
-
   // Mutex Lock helper
   const acquireLock = (cardId: string) => {
     setLockedCardIds((prev) => new Set(prev).add(cardId));
@@ -177,15 +150,39 @@ export default function WorkshopDashboard() {
     [jobCards]
   );
   const closedTodayCards = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = businessDateKey(new Date().toISOString());
     return jobCards.filter(
-      (c) => c.status === 'CLOSED_PAID' && (c.closed_at || c.updated_at || '').slice(0, 10) === today
+      (c) =>
+        c.status === 'CLOSED_PAID' &&
+        businessDateKey(c.closed_at || c.updated_at) === today
     );
   }, [jobCards]);
 
   const totalInvoicedRevenue = useMemo(() => {
     return closedTodayCards.reduce((sum, c) => sum + (Number(c.net_payable) || 0), 0);
   }, [closedTodayCards]);
+
+  const averageTurnaroundHours = useMemo(() => {
+    const completedDurations = closedTodayCards
+      .map((card) => {
+        const startedAt = new Date(card.created_at).getTime();
+        const completedAt = new Date(card.closed_at || card.updated_at).getTime();
+        const duration = completedAt - startedAt;
+        return Number.isFinite(duration) && duration >= 0 ? duration / 3_600_000 : null;
+      })
+      .filter((duration): duration is number => duration !== null);
+
+    if (completedDurations.length === 0) return null;
+    return completedDurations.reduce((sum, duration) => sum + duration, 0) / completedDurations.length;
+  }, [closedTodayCards]);
+
+  const aiFirstPassRate = useMemo(() => {
+    const cardsWithConcern = jobCards.filter((card) => card.customer_concern?.trim());
+    if (cardsWithConcern.length === 0) return null;
+
+    const diagnosesCompleted = cardsWithConcern.filter((card) => card.ai_diagnosis_result).length;
+    return (diagnosesCompleted / cardsWithConcern.length) * 100;
+  }, [jobCards]);
 
   // Filtered Cards for Registry
   const filteredRegistry = useMemo(() => {
@@ -345,21 +342,28 @@ export default function WorkshopDashboard() {
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-sky-400">
-                1.8 <span className="text-xs text-slate-400 font-sans">Hrs</span>
+                {averageTurnaroundHours === null ? '—' : formatHours(averageTurnaroundHours)}
               </span>
-              <span className="text-[10px] text-slate-500">Live Pace</span>
+              <span className="text-[10px] text-slate-500">
+                {averageTurnaroundHours === null ? 'No completions today' : 'Today'}
+              </span>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-purple-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
+          <div
+            className="min-w-0 rounded-2xl border border-purple-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5"
+            title="Share of job cards with a customer concern that have a saved AI diagnosis"
+          >
             <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider block">
               AI First-Pass
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
               <span className="text-2xl font-black font-mono text-purple-300">
-                98.6%
+                {aiFirstPassRate === null ? '—' : `${aiFirstPassRate.toFixed(1)}%`}
               </span>
-              <span className="text-[10px] text-purple-400/80">Accuracy</span>
+              <span className="text-[10px] text-purple-400/80">
+                {aiFirstPassRate === null ? 'No diagnostics yet' : 'Completed'}
+              </span>
             </div>
           </div>
         </div>

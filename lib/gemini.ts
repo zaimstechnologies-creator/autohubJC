@@ -3,13 +3,9 @@ import { AIDiagnosisResult } from '@/types';
 import { formatNumberedPoints } from '@/lib/diagnosisFormatting';
 import { detectDiagnosisLanguage, DiagnosisLanguage } from '@/lib/diagnosisLanguage';
 
-const FREE_DIAGNOSTIC_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
-  'gemini-3.6-flash',
-  'gemini-3.8-flash',
-  'gemini-4-hydrogen',
-];
+// Use the model verified for this project instead of probing unavailable models first.
+// This keeps the diagnostic request fast and avoids temporary 503 capacity errors.
+const FREE_DIAGNOSTIC_MODELS = ['gemini-3.1-flash-lite'];
 
 const DIAGNOSIS_TIMEOUT_MS = 40_000;
 

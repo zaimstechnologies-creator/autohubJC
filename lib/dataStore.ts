@@ -1,4 +1,5 @@
 import { JobCard } from '@/types';
+import { calculateJobCardFinancials } from '@/lib/jobCardFinancials';
 
 export function normalizeJobCard(item: any): JobCard {
   const id = String(item.id || '');
@@ -50,9 +51,13 @@ export function normalizeJobCard(item: any): JobCard {
   const alignment_charges = Number(item.alignment_charges ?? item.other_charges_pkr ?? 0);
   const discount_amount = Number(item.discount_amount ?? item.discount_pkr ?? 0);
   const advance_deposit = Number(item.advance_deposit ?? item.advance_received_pkr ?? 0);
-  const parts_total = parts.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-  const net_payable = parts_total + labor_charges + alignment_charges - discount_amount;
-  const balance_remaining = Math.max(0, net_payable - advance_deposit);
+  const financials = calculateJobCardFinancials({
+    itemized_parts: parts,
+    labor_charges,
+    alignment_charges,
+    discount_amount,
+    advance_deposit,
+  });
 
   return {
     id,
@@ -86,9 +91,7 @@ export function normalizeJobCard(item: any): JobCard {
     alignment_charges,
     discount_amount,
     advance_deposit,
-    parts_total,
-    net_payable,
-    balance_remaining,
+    ...financials,
     quality_checks: {
       exterior_clean: Boolean(item.quality_checks?.exterior_clean),
       interior_clean: Boolean(item.quality_checks?.interior_clean),

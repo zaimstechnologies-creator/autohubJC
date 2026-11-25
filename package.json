@@ -2,12 +2,10 @@
   "name": "al-shaheen-auto-hub",
   "version": "3.4.0",
   "description": "Enterprise Workshop Management, 60\" Waiting Lounge TV with YouTube Autoplay, Voice Announcements, and AI Job Cards for Al Shaheen Auto Hub",
-  "main": "server.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "legacy": "node server.js"
+    "start": "next start"
   },
   "engines": {
     "node": ">=20.9.0"
@@ -16,15 +14,12 @@
     "@google/genai": "^3.3.0",
     "@supabase/supabase-js": "^2.119.0",
     "clsx": "^2.1.1",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
     "lucide-react": "^1.73.0",
     "next": "^16.4.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sonner": "^2.0.8",
-    "tailwind-merge": "^3.7.0",
-    "ws": "^8.23.0"
+    "tailwind-merge": "^3.7.0"
   },
   "keywords": [
     "workshop",

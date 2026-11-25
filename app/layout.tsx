@@ -14,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#070b14] text-slate-100 min-h-screen">
+      <body
+        className="bg-[#070b14] text-slate-100 min-h-screen"
+        suppressHydrationWarning
+      >
         {children}
         <Toaster position="top-right" theme="dark" richColors />
       </body>
