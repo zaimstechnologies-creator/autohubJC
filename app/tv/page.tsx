@@ -43,6 +43,7 @@ declare global {
 export default function LoungeTVPage() {
   const [jobCards, setJobCards] = useState<LoungeJobCard[]>([]);
   const [announcementQueue, setAnnouncementQueue] = useState<LoungeJobCard[]>([]);
+  const [announcingCardId, setAnnouncingCardId] = useState<string | null>(null);
   const [playlistId, setPlaylistId] = useState(
     process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID || 'PLfWI-z1AjtsA'
   );
@@ -51,6 +52,9 @@ export default function LoungeTVPage() {
   const [queueStatus, setQueueStatus] = useState<'loading' | 'live' | 'error'>('loading');
 
   const playerRef = useRef<any>(null);
+  const queueListRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef(new Map<string, HTMLElement>());
+  const queueScrollDirectionRef = useRef<1 | -1>(1);
   const announcementStateRef = useRef<AnnouncementState>({
     pendingIds: [],
     completedIds: [],
@@ -324,6 +328,7 @@ export default function LoungeTVPage() {
   }, [playlistId]);
 
   const handleAnnouncementFinished = (cardId: string) => {
+    setAnnouncingCardId((activeId) => (activeId === cardId ? null : activeId));
     setAnnouncementQueue((prev) => prev.filter((c) => c.id !== cardId));
     const currentState = announcementStateRef.current;
     const wasPending = currentState.pendingIds.includes(cardId);
@@ -356,6 +361,37 @@ export default function LoungeTVPage() {
   const readyCount = displayQueue.filter((card) => card.status === 'READY_FOR_DELIVERY').length;
   const inProgressCount = displayQueue.filter((card) => card.status === 'IN_PROGRESS').length;
 
+  // Keep the lounge list moving at a gentle, TV-friendly pace. Announcements
+  // temporarily take priority so the highlighted vehicle remains in view.
+  useEffect(() => {
+    const list = queueListRef.current;
+    if (!list || announcingCardId) return;
+
+    const interval = window.setInterval(() => {
+      if (list.scrollHeight <= list.clientHeight) return;
+      const maxScrollTop = list.scrollHeight - list.clientHeight;
+      const currentTop = list.scrollTop;
+
+      if (currentTop >= maxScrollTop - 1) queueScrollDirectionRef.current = -1;
+      if (currentTop <= 1) queueScrollDirectionRef.current = 1;
+
+      list.scrollTop = Math.max(
+        0,
+        Math.min(maxScrollTop, currentTop + queueScrollDirectionRef.current)
+      );
+    }, 55);
+
+    return () => window.clearInterval(interval);
+  }, [announcingCardId, displayQueue.length]);
+
+  useEffect(() => {
+    if (!announcingCardId) return;
+    cardRefs.current.get(announcingCardId)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [announcingCardId, displayQueue]);
+
   return (
     <div className="tv-lounge flex h-dvh min-h-0 flex-col overflow-hidden bg-[#080e19] font-sans text-white selection:bg-amber-400/30">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-white/[0.08] bg-[#080e19] px-4 py-3 shadow-lg shadow-black/10 sm:px-6 md:min-h-[76px] md:flex-nowrap md:px-8">
@@ -381,6 +417,7 @@ export default function LoungeTVPage() {
         <div className="hidden items-center md:flex">
           <LoungeAudioEngine
             queue={announcementQueue}
+            onAnnouncementStart={setAnnouncingCardId}
             onAnnouncementComplete={handleAnnouncementFinished}
             playerRef={playerRef}
           />
@@ -452,7 +489,10 @@ export default function LoungeTVPage() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5 xl:p-6">
+          <div
+            ref={queueListRef}
+            className="min-h-0 flex-1 space-y-3 overflow-y-auto scroll-smooth p-4 sm:p-5 xl:p-6"
+          >
             {queueStatus === 'error' && displayQueue.length > 0 && (
               <div
                 role="status"
@@ -464,6 +504,7 @@ export default function LoungeTVPage() {
 
             {displayQueue.map((card) => {
               const isReady = card.status === 'READY_FOR_DELIVERY';
+              const isAnnouncing = card.id === announcingCardId;
               const isWash = card.bay_category === 'CAR_WASH';
               const bayLabel = isWash
                 ? `WASH BAY ${card.bay_number}`
@@ -472,8 +513,14 @@ export default function LoungeTVPage() {
               return (
                 <article
                   key={card.id}
-                  className={`grid min-h-[104px] grid-cols-1 items-center gap-4 rounded-2xl border p-4 transition-colors duration-300 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-6 sm:px-5 ${
-                    isReady
+                  ref={(element) => {
+                    if (element) cardRefs.current.set(card.id, element);
+                    else cardRefs.current.delete(card.id);
+                  }}
+                  className={`grid min-h-[104px] grid-cols-1 items-center gap-4 rounded-2xl border p-4 transition-all duration-500 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-6 sm:px-5 ${
+                    isAnnouncing
+                      ? 'border-amber-300 bg-gradient-to-r from-amber-400/25 via-emerald-400/[0.14] to-[#111d2a] shadow-[0_0_0_2px_rgba(251,191,36,0.24),0_0_32px_rgba(251,191,36,0.28)] ring-1 ring-amber-200/60'
+                      : isReady
                       ? 'border-emerald-400/35 bg-gradient-to-r from-emerald-400/[0.11] via-[#111d2a] to-[#111d2a] shadow-[inset_3px_0_0_0_rgba(52,211,153,0.85)]'
                       : 'border-white/[0.08] bg-white/[0.035] hover:border-white/[0.14] hover:bg-white/[0.05]'
                   }`}
@@ -527,7 +574,7 @@ export default function LoungeTVPage() {
                           Ready for delivery
                         </span>
                         <span className="text-[10px] font-medium text-emerald-200/75">
-                          Please proceed to the counter
+                          {isAnnouncing ? 'Now being announced' : 'Please proceed to the counter'}
                         </span>
                       </>
                     ) : (

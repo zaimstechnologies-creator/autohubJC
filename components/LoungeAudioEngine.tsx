@@ -10,6 +10,7 @@ type AnnouncementJobCard = Pick<
 
 interface LoungeAudioEngineProps {
   queue: AnnouncementJobCard[];
+  onAnnouncementStart?: (cardId: string) => void;
   onAnnouncementComplete?: (cardId: string) => void;
   playerRef: React.MutableRefObject<any>;
 }
@@ -54,6 +55,7 @@ function playClip(audio: HTMLAudioElement, clip: string): Promise<void> {
 
 export default function LoungeAudioEngine({
   queue,
+  onAnnouncementStart,
   onAnnouncementComplete,
   playerRef,
 }: LoungeAudioEngineProps) {
@@ -113,6 +115,7 @@ export default function LoungeAudioEngine({
     try {
       setIsAnnouncing(true);
       setCurrentAnnouncementText(`Announcing: ${plateNumber || nextCard.make_model || 'Vehicle'}`);
+      onAnnouncementStart?.(nextCard.id);
 
       try {
         playerRef.current?.setVolume?.(YOUTUBE_ANNOUNCEMENT_VOLUME);
@@ -139,7 +142,7 @@ export default function LoungeAudioEngine({
       setCurrentAnnouncementText(null);
       isProcessingRef.current = false;
     }
-  }, [onAnnouncementComplete, playerRef, queue]);
+  }, [onAnnouncementComplete, onAnnouncementStart, playerRef, queue]);
 
   useEffect(() => {
     if (queue.length > 0 && !isProcessingRef.current) {
