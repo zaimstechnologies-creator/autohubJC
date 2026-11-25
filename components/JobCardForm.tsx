@@ -821,7 +821,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
             <Wrench className="w-4 h-4 text-sky-400" />
-            Section 2 — Interactive 360° Vehicle Exterior Inspection
+            Section 2 Interactive 360° Vehicle Exterior Inspection
           </h3>
           <span className="text-xs text-slate-400 font-mono">Step 2 of 4</span>
         </div>
@@ -875,7 +875,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-purple-400" />
-            Section 3 — Voice Intake & Gemini AI Diagnostics
+            Section 3 Voice Intake & Gemini AI Diagnostics
           </h3>
           <span className="text-xs text-slate-400 font-mono">Step 3 of 4</span>
         </div>
@@ -965,7 +965,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-400" />
-            Section 4 — Spare Parts, Materials & Pricing (PKR)
+            Section 4 Spare Parts, Materials & Pricing (PKR)
           </h3>
           <button
             type="button"

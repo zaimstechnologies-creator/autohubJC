@@ -54,7 +54,7 @@ export default function HomePage() {
             </span>
           </h2>
           <p className="mx-auto max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
-            Workshop operations, AI-assisted diagnostics, customer vehicle tracking, and a more welcoming lounge experience — together in one place.
+            Workshop operations, AI-assisted diagnostics, customer vehicle tracking, and a more welcoming lounge experience together in one place.
           </p>
         </div>
 
