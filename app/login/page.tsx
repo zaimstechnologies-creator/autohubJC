@@ -4,6 +4,11 @@ import { FormEvent, useState } from 'react';
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import { toast } from 'sonner';
 
+type FieldErrors = {
+  username?: string;
+  password?: string;
+};
+
 const PASSWORD_PATTERN =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])[!-~]{12}$/;
 
@@ -44,20 +49,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [credentialsError, setCredentialsError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [credentialsInvalid, setCredentialsInvalid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const usernameInvalid = Boolean(fieldErrors.username || credentialsInvalid);
   const passwordInvalid = Boolean(fieldErrors.password || credentialsInvalid);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setCredentialsError('');
+  function clearErrors() {
+    setFieldErrors({});
     setCredentialsInvalid(false);
-    const nextFieldErrors = {
+    setCredentialsError('');
+  }
+
+  function validateForm(): FieldErrors {
+    return {
       username: getUsernameError(username),
       password: getPasswordError(password),
     };
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearErrors();
+
+    const nextFieldErrors = validateForm();
     setFieldErrors(nextFieldErrors);
     const validationError = nextFieldErrors.username || nextFieldErrors.password;
     if (validationError) {
@@ -155,9 +170,7 @@ export default function LoginPage() {
               value={username}
               onChange={(event) => {
                 setUsername(event.target.value);
-                setFieldErrors({});
-                setCredentialsInvalid(false);
-                setCredentialsError('');
+                clearErrors();
               }}
               onBlur={() =>
                 setFieldErrors((current) => ({
@@ -208,9 +221,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
-                  setFieldErrors({});
-                  setCredentialsInvalid(false);
-                  setCredentialsError('');
+                  clearErrors();
                 }}
                 onBlur={() =>
                   setFieldErrors((current) => ({
