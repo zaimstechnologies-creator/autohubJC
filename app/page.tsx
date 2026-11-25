@@ -171,7 +171,7 @@ export default function HomePage() {
       </main>
 
       <footer className="relative border-t border-slate-800/80 px-4 py-4 text-center text-[11px] text-slate-500 sm:px-6">
-        Al Shaheen Auto Hub • Lahore, Pakistan • Powered by Next.js, Supabase & Google Gemini API
+        Al Shaheen Auto Hub • Main Bedian Road, Near Askari 11, DHA Phase 6, Lahore, Pakistan
       </footer>
     </div>
   );
