@@ -15,6 +15,8 @@ interface LoungeAudioEngineProps {
 }
 
 const VOICE_PATH = '/voice';
+const ANNOUNCEMENT_PLAYBACK_RATE = 1.24;
+const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
 const FIXED_CLIPS = ['attention-please', 'registration-number'] as const;
 const ENDING_CLIPS = ['ready-for-delivery', 'proceed-accounts', 'thank-you'] as const;
 
@@ -41,6 +43,8 @@ function playClip(audio: HTMLAudioElement, clip: string): Promise<void> {
 
     audio.pause();
     audio.currentTime = 0;
+    audio.playbackRate = ANNOUNCEMENT_PLAYBACK_RATE;
+    audio.defaultPlaybackRate = ANNOUNCEMENT_PLAYBACK_RATE;
     audio.src = `${VOICE_PATH}/${clip}.wav`;
     audio.onended = finish;
     audio.onerror = fail;
@@ -64,6 +68,8 @@ export default function LoungeAudioEngine({
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
+    audio.playbackRate = ANNOUNCEMENT_PLAYBACK_RATE;
+    audio.defaultPlaybackRate = ANNOUNCEMENT_PLAYBACK_RATE;
     audioRef.current = audio;
 
     const unlockAudio = () => {
@@ -109,7 +115,7 @@ export default function LoungeAudioEngine({
       setCurrentAnnouncementText(`Announcing: ${plateNumber || nextCard.make_model || 'Vehicle'}`);
 
       try {
-        playerRef.current?.setVolume?.(35);
+        playerRef.current?.setVolume?.(YOUTUBE_ANNOUNCEMENT_VOLUME);
       } catch (error) {
         console.warn('Could not lower lounge music volume:', error);
       }
