@@ -377,7 +377,7 @@ export default function LoungeTVPage() {
 
       list.scrollTop = Math.max(
         0,
-        Math.min(maxScrollTop, currentTop + queueScrollDirectionRef.current)
+        Math.min(maxScrollTop, currentTop + queueScrollDirectionRef.current * 1.25)
       );
     }, 55);
 
