@@ -16,7 +16,8 @@ interface LoungeAudioEngineProps {
 }
 
 const VOICE_PATH = '/voice';
-const ANNOUNCEMENT_PLAYBACK_RATE = 1.24;
+const ANNOUNCEMENT_PLAYBACK_RATE = 1;
+const PLATE_NUMBER_PLAYBACK_RATE = 1;
 const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
 const FIXED_CLIPS = ['attention-please', 'registration-number'] as const;
 const ENDING_CLIPS = ['ready-for-delivery', 'proceed-accounts', 'thank-you'] as const;
@@ -29,7 +30,11 @@ function getAnnouncementClips(plateNumber?: string | null) {
     : ['attention-please', 'ready-for-delivery', ...ENDING_CLIPS.slice(1)];
 }
 
-function playClip(audio: HTMLAudioElement, clip: string): Promise<void> {
+function playClip(
+  audio: HTMLAudioElement,
+  clip: string,
+  playbackRate = ANNOUNCEMENT_PLAYBACK_RATE
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const finish = () => {
       audio.onended = null;
@@ -44,8 +49,8 @@ function playClip(audio: HTMLAudioElement, clip: string): Promise<void> {
 
     audio.pause();
     audio.currentTime = 0;
-    audio.playbackRate = ANNOUNCEMENT_PLAYBACK_RATE;
-    audio.defaultPlaybackRate = ANNOUNCEMENT_PLAYBACK_RATE;
+    audio.playbackRate = playbackRate;
+    audio.defaultPlaybackRate = playbackRate;
     audio.src = `${VOICE_PATH}/${clip}.wav`;
     audio.onended = finish;
     audio.onerror = fail;
@@ -124,7 +129,11 @@ export default function LoungeAudioEngine({
       }
 
       for (const clip of getAnnouncementClips(plateNumber)) {
-        await playClip(audio, clip);
+        const isPlateCharacter = /^[a-z0-9]$/.test(clip);
+        const playbackRate = isPlateCharacter
+          ? PLATE_NUMBER_PLAYBACK_RATE
+          : ANNOUNCEMENT_PLAYBACK_RATE;
+        await playClip(audio, clip, playbackRate);
       }
 
       onAnnouncementComplete?.(nextCard.id);

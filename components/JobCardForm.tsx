@@ -243,7 +243,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
 
       // Auto-append suggested parts
       const newParts: ItemizedPart[] = [
-        ...formData.itemized_parts,
+        ...formData.itemized_parts.filter((part) => !part.id.startsWith('ai_')),
         ...(diag.suggested_parts || []).map((p, idx) => ({
           id: `ai_${Date.now()}_${idx}`,
           sku: p.sku || `PART-${idx + 1}`,
