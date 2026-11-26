@@ -25,12 +25,10 @@ type LoungeJobCard = Pick<
 >;
 
 const ANNOUNCEMENT_STATE_KEY = 'tv-announcement-state-v2';
-const ANNOUNCEMENT_REPEAT_DELAY_MS = 5 * 60 * 1000;
 
 interface AnnouncementState {
   pendingIds: string[];
   completedIds: string[];
-  nextAnnouncementAt: number | null;
 }
 
 declare global {
@@ -58,7 +56,6 @@ export default function LoungeTVPage() {
   const announcementStateRef = useRef<AnnouncementState>({
     pendingIds: [],
     completedIds: [],
-    nextAnnouncementAt: null,
   });
 
   const saveAnnouncementState = (state: AnnouncementState) => {
@@ -81,10 +78,6 @@ export default function LoungeTVPage() {
         announcementStateRef.current = {
           pendingIds: stored.pendingIds.filter((id: unknown): id is string => typeof id === 'string'),
           completedIds: stored.completedIds.filter((id: unknown): id is string => typeof id === 'string'),
-          nextAnnouncementAt:
-            typeof stored.nextAnnouncementAt === 'number' && Number.isFinite(stored.nextAnnouncementAt)
-              ? stored.nextAnnouncementAt
-              : null,
         };
       }
     } catch (error) {
@@ -164,7 +157,6 @@ export default function LoungeTVPage() {
       const currentState = announcementStateRef.current;
       let pendingIds = currentState.pendingIds.filter((id) => readyIds.has(id));
       let completedIds = currentState.completedIds.filter((id) => readyIds.has(id));
-      let nextAnnouncementAt = currentState.nextAnnouncementAt;
 
       const newlyReadyIds = readyVehicles
         .filter((card) => !pendingIds.includes(card.id) && !completedIds.includes(card.id))
@@ -173,17 +165,9 @@ export default function LoungeTVPage() {
       if (readyVehicles.length === 0) {
         pendingIds = [];
         completedIds = [];
-        nextAnnouncementAt = null;
       } else if (pendingIds.length === 0) {
-        // Announce a vehicle that has just become ready immediately. The repeat
-        // delay only applies when there are no new vehicles to announce.
         if (newlyReadyIds.length > 0) {
           pendingIds = newlyReadyIds;
-          nextAnnouncementAt = null;
-        } else if (!nextAnnouncementAt || Date.now() >= nextAnnouncementAt) {
-          pendingIds = readyVehicles.map((card) => card.id);
-          completedIds = [];
-          nextAnnouncementAt = null;
         }
       } else {
         const cycleIds = new Set([...pendingIds, ...completedIds]);
@@ -193,10 +177,9 @@ export default function LoungeTVPage() {
             .filter((card) => !cycleIds.has(card.id))
             .map((card) => card.id),
         ];
-        nextAnnouncementAt = null;
       }
 
-      const nextState = { pendingIds, completedIds, nextAnnouncementAt };
+      const nextState = { pendingIds, completedIds };
       if (JSON.stringify(nextState) !== JSON.stringify(currentState)) {
         saveAnnouncementState(nextState);
       }
@@ -339,10 +322,6 @@ export default function LoungeTVPage() {
     saveAnnouncementState({
       pendingIds,
       completedIds,
-      nextAnnouncementAt:
-        wasPending && pendingIds.length === 0
-          ? Date.now() + ANNOUNCEMENT_REPEAT_DELAY_MS
-          : currentState.nextAnnouncementAt,
     });
   };
 
@@ -414,7 +393,7 @@ export default function LoungeTVPage() {
           </div>
         </div>
 
-        <div className="hidden items-center md:flex">
+        <div className="flex items-center">
           <LoungeAudioEngine
             queue={announcementQueue}
             onAnnouncementStart={setAnnouncingCardId}

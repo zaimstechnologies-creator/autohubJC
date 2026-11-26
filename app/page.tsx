@@ -153,7 +153,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-y-3 border-y border-slate-800/80 py-4 text-xs sm:grid-cols-2 sm:gap-y-4 sm:py-5 sm:text-sm xl:grid-cols-4 xl:gap-y-0">
           <div className="flex min-h-10 min-w-0 items-center gap-2.5 text-slate-300 sm:justify-center sm:px-3 xl:border-r xl:border-slate-800/80">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-400" />
-            <span className="leading-snug">Multilingual Urdu Voice Intake</span>
+            <span className="leading-snug">Multilingual AI Repair Diagnosis</span>
           </div>
           <div className="flex min-h-10 min-w-0 items-center gap-2.5 text-slate-300 sm:justify-center sm:px-3 xl:border-r xl:border-slate-800/80">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-purple-400" />
