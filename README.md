@@ -111,8 +111,9 @@ The login screen is available at `/login`. Configure these values in `.env.local
 - `AUTH_PASSWORD_HASH`: generated using `node scripts/hash-password.cjs` (enter exactly 12 characters with uppercase/lowercase letters, a number, and a symbol, without spaces; input is hidden and only its scrypt hash is printed).
 - `AUTH_SECRET`: a random secret with at least 32 bytes. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 - `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase key used by private API routes. Never prefix it with `NEXT_PUBLIC_`.
+- `ELEVENLABS_API_KEY`: server-only ElevenLabs key required for lounge TV voice announcements. `ELEVENLABS_VOICE_ID` is optional and defaults to the Bella voice.
 
-Do not commit `.env.local` or share these secrets. `SUPABASE_SERVICE_ROLE_KEY` is only used on the server. Apply [supabase/schema.sql](./supabase/schema.sql) to remove the previous unrestricted database policies and restrict the tracking function to server-side use.
+Do not commit `.env.local` or share these secrets. `SUPABASE_SERVICE_ROLE_KEY` and `ELEVENLABS_API_KEY` are only used on the server. Apply [supabase/schema.sql](./supabase/schema.sql) to remove the previous unrestricted database policies and restrict the tracking function to server-side use.
 
 Sessions use a persistent HttpOnly, SameSite=Strict cookie, Secure in production, and expire 14 days after sign-in. Each sign-in creates a unique signed token. There is no refresh token for this single administrator account; sign in again after expiration. Logout clears the browser cookie; rotate `AUTH_SECRET` to invalidate all issued sessions. After changing the password policy, generate a new `AUTH_PASSWORD_HASH` and update it in `.env.local` and the deployment's secret settings.
 

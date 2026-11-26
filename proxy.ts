@@ -17,6 +17,7 @@ export async function proxy(request: NextRequest) {
     pathname === '/track/' ||
     pathname === '/login' ||
     pathname === '/api/tv/queue' ||
+    pathname === '/api/tv/voice' ||
     pathname === '/api/track' ||
     pathname === '/api/track/' ||
     pathname === '/api/auth/login' ||

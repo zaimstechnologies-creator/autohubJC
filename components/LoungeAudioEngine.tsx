@@ -15,19 +15,38 @@ interface LoungeAudioEngineProps {
   playerRef: React.MutableRefObject<any>;
 }
 
-const VOICE_PATH = '/voice';
-const ANNOUNCEMENT_PLAYBACK_RATE = 0.96;
-const PLATE_NUMBER_PLAYBACK_RATE = 0.96;
 const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
-const FIXED_CLIPS = ['attention-please', 'registration-number'] as const;
-const ENDING_CLIPS = ['ready-for-delivery', 'proceed-accounts', 'thank-you'] as const;
 
-function getAnnouncementClips(plateNumber?: string | null) {
-  const plateClips = (plateNumber || '').toLowerCase().match(/[a-z0-9]/g) || [];
+function formatPlateForSpeech(plateNumber?: string | null) {
+  const characters = (plateNumber || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .split('');
+  return characters.length > 0 ? characters.join('. ') : '';
+}
 
-  return plateClips.length > 0
-    ? [...FIXED_CLIPS, ...plateClips, ...ENDING_CLIPS]
-    : ['attention-please', 'ready-for-delivery', ...ENDING_CLIPS.slice(1)];
+async function fetchElevenLabsAnnouncement(
+  context: AudioContext,
+  plateNumber: string
+): Promise<AudioBuffer> {
+  const plateSpeech = formatPlateForSpeech(plateNumber);
+  const text = plateSpeech
+    ? `Attention please. Registration number ${plateSpeech}. Vehicle is now ready for delivery. Please proceed to the counter. Thank you.`
+    : 'Attention please. The vehicle is now ready for delivery. Please proceed to the counter. Thank you.';
+
+  const response = await fetch('/api/tv/voice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error || `ElevenLabs request failed (${response.status}).`);
+  }
+
+  const data = await response.arrayBuffer();
+  return context.decodeAudioData(data);
 }
 
 export default function LoungeAudioEngine({
@@ -38,10 +57,9 @@ export default function LoungeAudioEngine({
 }: LoungeAudioEngineProps) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const voiceBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
   const isProcessingRef = useRef(false);
-  const retryAfterRef = useRef(0);
 
   useEffect(() => {
     const AudioContextCtor =
@@ -56,29 +74,10 @@ export default function LoungeAudioEngine({
       if (context.state === 'suspended') {
         await context.resume();
       }
-      retryAfterRef.current = 0;
     };
 
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
-
-    const preload = async () => {
-      const clips = [
-        ...FIXED_CLIPS,
-        ...ENDING_CLIPS,
-        ...Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index)),
-        ...Array.from({ length: 10 }, (_, index) => String(index)),
-      ];
-      await Promise.all(clips.map(async (clip) => {
-        if (voiceBuffersRef.current.has(clip)) return;
-        const response = await fetch(`${VOICE_PATH}/${clip}.wav`);
-        if (!response.ok) throw new Error(`Could not load voice clip: ${clip}`);
-        const data = await response.arrayBuffer();
-        const buffer = await context.decodeAudioData(data);
-        voiceBuffersRef.current.set(clip, buffer);
-      }));
-    };
-    preload().catch((error) => console.warn(error));
 
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
@@ -89,19 +88,20 @@ export default function LoungeAudioEngine({
   }, []);
 
   const processQueue = useCallback(async () => {
-    if (queue.length === 0) {
-      return;
-    }
-    if (isProcessingRef.current || Date.now() < retryAfterRef.current) return;
+    if (queue.length === 0 || isProcessingRef.current) return;
 
     const context = audioContextRef.current;
-    if (!context) return;
+    if (!context) {
+      setAnnouncementError('Audio playback is not supported by this browser.');
+      return;
+    }
 
     isProcessingRef.current = true;
     const nextCard = queue[0];
     const plateNumber = nextCard.plate_number?.trim();
 
     try {
+      setAnnouncementError(null);
       setIsAnnouncing(true);
       setCurrentAnnouncementText(`Announcing: ${plateNumber || nextCard.make_model || 'Vehicle'}`);
       onAnnouncementStart?.(nextCard.id);
@@ -113,52 +113,20 @@ export default function LoungeAudioEngine({
       }
 
       if (context.state === 'suspended') await context.resume();
-
-      const clips = getAnnouncementClips(plateNumber);
-      await Promise.all(clips.map(async (clip) => {
-        if (voiceBuffersRef.current.has(clip)) return;
-        const response = await fetch(`${VOICE_PATH}/${clip}.wav`);
-        if (!response.ok) throw new Error(`Could not load voice clip: ${clip}`);
-        const data = await response.arrayBuffer();
-        const buffer = await context.decodeAudioData(data);
-        voiceBuffersRef.current.set(clip, buffer);
-      }));
-
-      await new Promise<void>((resolve, reject) => {
-        let scheduledAt = context.currentTime + 0.02;
-        let lastSource: AudioBufferSourceNode | undefined;
-
-        clips.forEach((clip) => {
-          const buffer = voiceBuffersRef.current.get(clip);
-          if (!buffer) {
-            reject(new Error(`Missing voice clip: ${clip}`));
-            return;
-          }
-
-          const source = context.createBufferSource();
-          source.buffer = buffer;
-          source.playbackRate.value = /^[a-z0-9]$/.test(clip)
-            ? PLATE_NUMBER_PLAYBACK_RATE
-            : ANNOUNCEMENT_PLAYBACK_RATE;
-          source.connect(context.destination);
-          source.start(scheduledAt);
-          scheduledAt += buffer.duration / source.playbackRate.value;
-          lastSource = source;
-        });
-
-        if (!lastSource) {
-          reject(new Error('No voice clips were scheduled.'));
-          return;
-        }
-
-        lastSource.onended = () => resolve();
+      const audioBuffer = await fetchElevenLabsAnnouncement(context, plateNumber || '');
+      await new Promise<void>((resolve) => {
+        const source = context.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(context.destination);
+        source.onended = () => resolve();
+        source.start(context.currentTime + 0.02);
       });
 
       onAnnouncementComplete?.(nextCard.id);
     } catch (error) {
-      // Keep the vehicle in the queue and retry automatically without filling the
-      // terminal with errors if a TV browser temporarily blocks media playback.
-      retryAfterRef.current = Date.now() + 10_000;
+      const message = error instanceof Error ? error.message : 'ElevenLabs announcement failed.';
+      console.error('TV announcement failed:', message);
+      setAnnouncementError(message);
     } finally {
       try {
         playerRef.current?.setVolume?.(100);
@@ -177,12 +145,28 @@ export default function LoungeAudioEngine({
     }
   }, [queue, processQueue]);
 
-  if (!isAnnouncing && !currentAnnouncementText) return null;
+  if (!isAnnouncing && !currentAnnouncementText && !announcementError) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 text-xs font-semibold animate-pulse shadow-lg">
-      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-      <span>{currentAnnouncementText || 'Broadcasting delivery announcement...'}</span>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-lg ${
+      announcementError
+        ? 'bg-red-500/20 border-red-500/60 text-red-200'
+        : 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 animate-pulse'
+    }`}>
+      {!announcementError && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
+      <span>{announcementError || currentAnnouncementText || 'Broadcasting delivery announcement...'}</span>
+      {announcementError && (
+        <button
+          type="button"
+          onClick={() => {
+            setAnnouncementError(null);
+            processQueue();
+          }}
+          className="rounded bg-red-500/20 px-2 py-1 underline"
+        >
+          Retry
+        </button>
+      )}
     </div>
   );
 }
