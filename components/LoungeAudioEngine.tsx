@@ -16,8 +16,8 @@ interface LoungeAudioEngineProps {
 }
 
 const VOICE_PATH = '/voice';
-const ANNOUNCEMENT_PLAYBACK_RATE = 1;
-const PLATE_NUMBER_PLAYBACK_RATE = 1;
+const ANNOUNCEMENT_PLAYBACK_RATE = 0.96;
+const PLATE_NUMBER_PLAYBACK_RATE = 0.96;
 const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
 const FIXED_CLIPS = ['attention-please', 'registration-number'] as const;
 const ENDING_CLIPS = ['ready-for-delivery', 'proceed-accounts', 'thank-you'] as const;
@@ -30,34 +30,6 @@ function getAnnouncementClips(plateNumber?: string | null) {
     : ['attention-please', 'ready-for-delivery', ...ENDING_CLIPS.slice(1)];
 }
 
-function playClip(
-  audio: HTMLAudioElement,
-  clip: string,
-  playbackRate = ANNOUNCEMENT_PLAYBACK_RATE
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const finish = () => {
-      audio.onended = null;
-      audio.onerror = null;
-      resolve();
-    };
-    const fail = () => {
-      audio.onended = null;
-      audio.onerror = null;
-      reject(new Error(`Could not play voice clip: ${clip}`));
-    };
-
-    audio.pause();
-    audio.currentTime = 0;
-    audio.playbackRate = playbackRate;
-    audio.defaultPlaybackRate = playbackRate;
-    audio.src = `${VOICE_PATH}/${clip}.wav`;
-    audio.onended = finish;
-    audio.onerror = fail;
-    audio.play().catch(fail);
-  });
-}
-
 export default function LoungeAudioEngine({
   queue,
   onAnnouncementStart,
@@ -66,41 +38,53 @@ export default function LoungeAudioEngine({
 }: LoungeAudioEngineProps) {
   const [isAnnouncing, setIsAnnouncing] = useState(false);
   const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const voiceBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
   const isProcessingRef = useRef(false);
   const retryAfterRef = useRef(0);
 
-  // A single HTMLAudioElement is retained for every clip. A real user gesture once
-  // unlocks later automatic playback on kiosk and Android TV browsers.
   useEffect(() => {
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.playbackRate = ANNOUNCEMENT_PLAYBACK_RATE;
-    audio.defaultPlaybackRate = ANNOUNCEMENT_PLAYBACK_RATE;
-    audioRef.current = audio;
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
 
-    const unlockAudio = () => {
-      audio.src = `${VOICE_PATH}/attention-please.wav`;
-      audio.volume = 0;
-      audio.play()
-        .then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 1;
-          retryAfterRef.current = 0;
-        })
-        .catch(() => {
-          audio.volume = 1;
-        });
+    const context = new AudioContextCtor();
+    audioContextRef.current = context;
+
+    const unlockAudio = async () => {
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+      retryAfterRef.current = 0;
     };
 
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
+
+    const preload = async () => {
+      const clips = [
+        ...FIXED_CLIPS,
+        ...ENDING_CLIPS,
+        ...Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index)),
+        ...Array.from({ length: 10 }, (_, index) => String(index)),
+      ];
+      await Promise.all(clips.map(async (clip) => {
+        if (voiceBuffersRef.current.has(clip)) return;
+        const response = await fetch(`${VOICE_PATH}/${clip}.wav`);
+        if (!response.ok) throw new Error(`Could not load voice clip: ${clip}`);
+        const data = await response.arrayBuffer();
+        const buffer = await context.decodeAudioData(data);
+        voiceBuffersRef.current.set(clip, buffer);
+      }));
+    };
+    preload().catch((error) => console.warn(error));
+
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
-      audio.pause();
-      audioRef.current = null;
+      context.close().catch(() => {});
+      audioContextRef.current = null;
     };
   }, []);
 
@@ -110,8 +94,8 @@ export default function LoungeAudioEngine({
     }
     if (isProcessingRef.current || Date.now() < retryAfterRef.current) return;
 
-    const audio = audioRef.current;
-    if (!audio) return;
+    const context = audioContextRef.current;
+    if (!context) return;
 
     isProcessingRef.current = true;
     const nextCard = queue[0];
@@ -128,13 +112,47 @@ export default function LoungeAudioEngine({
         console.warn('Could not lower lounge music volume:', error);
       }
 
-      for (const clip of getAnnouncementClips(plateNumber)) {
-        const isPlateCharacter = /^[a-z0-9]$/.test(clip);
-        const playbackRate = isPlateCharacter
-          ? PLATE_NUMBER_PLAYBACK_RATE
-          : ANNOUNCEMENT_PLAYBACK_RATE;
-        await playClip(audio, clip, playbackRate);
-      }
+      if (context.state === 'suspended') await context.resume();
+
+      const clips = getAnnouncementClips(plateNumber);
+      await Promise.all(clips.map(async (clip) => {
+        if (voiceBuffersRef.current.has(clip)) return;
+        const response = await fetch(`${VOICE_PATH}/${clip}.wav`);
+        if (!response.ok) throw new Error(`Could not load voice clip: ${clip}`);
+        const data = await response.arrayBuffer();
+        const buffer = await context.decodeAudioData(data);
+        voiceBuffersRef.current.set(clip, buffer);
+      }));
+
+      await new Promise<void>((resolve, reject) => {
+        let scheduledAt = context.currentTime + 0.02;
+        let lastSource: AudioBufferSourceNode | undefined;
+
+        clips.forEach((clip) => {
+          const buffer = voiceBuffersRef.current.get(clip);
+          if (!buffer) {
+            reject(new Error(`Missing voice clip: ${clip}`));
+            return;
+          }
+
+          const source = context.createBufferSource();
+          source.buffer = buffer;
+          source.playbackRate.value = /^[a-z0-9]$/.test(clip)
+            ? PLATE_NUMBER_PLAYBACK_RATE
+            : ANNOUNCEMENT_PLAYBACK_RATE;
+          source.connect(context.destination);
+          source.start(scheduledAt);
+          scheduledAt += buffer.duration / source.playbackRate.value;
+          lastSource = source;
+        });
+
+        if (!lastSource) {
+          reject(new Error('No voice clips were scheduled.'));
+          return;
+        }
+
+        lastSource.onended = () => resolve();
+      });
 
       onAnnouncementComplete?.(nextCard.id);
     } catch (error) {
