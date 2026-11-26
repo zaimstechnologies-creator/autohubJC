@@ -5,7 +5,6 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isStaticAsset =
     pathname.startsWith('/_next/') ||
-    pathname.startsWith('/__nextjs_font/') ||
     (!pathname.startsWith('/api/') &&
       /\.(?:png|jpe?g|svg|webp|gif|ico|woff2?|ttf|otf|mp3|wav|m4a|aac|mp4|webm|pdf)$/i.test(
         pathname
@@ -18,7 +17,7 @@ export async function proxy(request: NextRequest) {
     pathname === '/track/' ||
     pathname === '/login' ||
     pathname === '/api/tv/queue' ||
-    pathname === '/api/tts' ||
+    pathname === '/api/tv/voice' ||
     pathname === '/api/track' ||
     pathname === '/api/track/' ||
     pathname === '/api/auth/login' ||

@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { JobCard } from '@/types';
 
-type AnnouncementJobCard = Pick<JobCard, 'id' | 'make_model' | 'plate_number'>;
+type AnnouncementJobCard = Pick<
+  JobCard,
+  'id' | 'bay_category' | 'bay_number' | 'make_model' | 'plate_number'
+>;
 
 interface LoungeAudioEngineProps {
   queue: AnnouncementJobCard[];
@@ -13,18 +16,37 @@ interface LoungeAudioEngineProps {
 }
 
 const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
-const ANNOUNCEMENT_BELL_SOURCE = '/chime.mp3';
 
-async function fetchAnnouncementAudio(source: string) {
-  const response = await fetch(source, { cache: 'no-store' });
-  if (!response.ok) {
-    throw new Error('Could not load the announcement audio.');
-  }
-  return URL.createObjectURL(await response.blob());
+function formatPlateForSpeech(plateNumber?: string | null) {
+  const characters = (plateNumber || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .split('');
+  return characters.length > 0 ? characters.join('. ') : '';
 }
 
-function isAutoplayBlocked(error: unknown) {
-  return error instanceof DOMException && error.name === 'NotAllowedError';
+async function fetchElevenLabsAnnouncement(
+  context: AudioContext,
+  plateNumber: string
+): Promise<AudioBuffer> {
+  const plateSpeech = formatPlateForSpeech(plateNumber);
+  const text = plateSpeech
+    ? `Attention please. Registration number ${plateSpeech}. Vehicle is now ready for delivery. Please proceed to the counter. Thank you.`
+    : 'Attention please. The vehicle is now ready for delivery. Please proceed to the counter. Thank you.';
+
+  const response = await fetch('/api/tv/voice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error || `ElevenLabs request failed (${response.status}).`);
+  }
+
+  const data = await response.arrayBuffer();
+  return context.decodeAudioData(data);
 }
 
 export default function LoungeAudioEngine({
@@ -33,126 +55,118 @@ export default function LoungeAudioEngine({
   onAnnouncementComplete,
   playerRef,
 }: LoungeAudioEngineProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isAnnouncing, setIsAnnouncing] = useState(false);
+  const [currentAnnouncementText, setCurrentAnnouncementText] = useState<string | null>(null);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const isProcessingRef = useRef(false);
-  const retryPlaybackRef = useRef<null | (() => void)>(null);
-  const [audioBlocked, setAudioBlocked] = useState(false);
 
-  const playAudio = useCallback(async (source: string) => {
-    const audio = audioRef.current;
-    if (!audio) throw new Error('Audio playback is not supported by this browser.');
+  useEffect(() => {
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
 
-    audio.src = source;
-    audio.load();
+    const context = new AudioContextCtor();
+    audioContextRef.current = context;
 
-    try {
-      await audio.play();
-    } catch (error) {
-      if (!isAutoplayBlocked(error)) throw error;
+    const unlockAudio = async () => {
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+    };
 
-      setAudioBlocked(true);
-      await new Promise<void>((resolve, reject) => {
-        retryPlaybackRef.current = () => {
-          retryPlaybackRef.current = null;
-          audio.play().then(resolve).catch(reject);
-        };
-      });
-      setAudioBlocked(false);
-    }
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
 
-    await new Promise<void>((resolve, reject) => {
-      const onEnded = () => {
-        removeListeners();
-        resolve();
-      };
-      const onError = () => {
-        removeListeners();
-        reject(new Error('The TV could not play the announcement audio.'));
-      };
-      const removeListeners = () => {
-        audio.removeEventListener('ended', onEnded);
-        audio.removeEventListener('error', onError);
-      };
-
-      audio.addEventListener('ended', onEnded);
-      audio.addEventListener('error', onError);
-    });
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      context.close().catch(() => {});
+      audioContextRef.current = null;
+    };
   }, []);
 
   const processQueue = useCallback(async () => {
     if (queue.length === 0 || isProcessingRef.current) return;
 
-    const nextCard = queue[0];
-    const plateNumber = (nextCard.plate_number || '').trim();
-    if (!plateNumber) {
-      console.error('TV announcement skipped: vehicle has no plate number.', nextCard.id);
-      if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+    const context = audioContextRef.current;
+    if (!context) {
+      setAnnouncementError('Audio playback is not supported by this browser.');
       return;
     }
 
     isProcessingRef.current = true;
-    if (onAnnouncementStart) onAnnouncementStart(nextCard.id);
+    const nextCard = queue[0];
+    const plateNumber = nextCard.plate_number?.trim();
 
     try {
-      const player = playerRef.current;
-      if (player && typeof player.setVolume === 'function') {
-        player.setVolume(YOUTUBE_ANNOUNCEMENT_VOLUME);
-      }
+      setAnnouncementError(null);
+      setIsAnnouncing(true);
+      setCurrentAnnouncementText(`Announcing: ${plateNumber || nextCard.make_model || 'Vehicle'}`);
+      onAnnouncementStart?.(nextCard.id);
 
-      const source = '/api/tts?plate=' + encodeURIComponent(plateNumber);
-      const announcementAudio = fetchAnnouncementAudio(source);
-      await playAudio(ANNOUNCEMENT_BELL_SOURCE);
-
-      const announcementSource = await announcementAudio;
       try {
-        await playAudio(announcementSource);
-      } finally {
-        URL.revokeObjectURL(announcementSource);
+        playerRef.current?.setVolume?.(YOUTUBE_ANNOUNCEMENT_VOLUME);
+      } catch (error) {
+        console.warn('Could not lower lounge music volume:', error);
       }
 
-      if (onAnnouncementComplete) onAnnouncementComplete(nextCard.id);
+      if (context.state === 'suspended') await context.resume();
+      const audioBuffer = await fetchElevenLabsAnnouncement(context, plateNumber || '');
+      await new Promise<void>((resolve) => {
+        const source = context.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(context.destination);
+        source.onended = () => resolve();
+        source.start(context.currentTime + 0.02);
+      });
+
+      onAnnouncementComplete?.(nextCard.id);
     } catch (error) {
-      console.error('TV announcement failed:', error);
+      const message = error instanceof Error ? error.message : 'ElevenLabs announcement failed.';
+      console.error('TV announcement failed:', message);
+      setAnnouncementError(message);
     } finally {
-      const player = playerRef.current;
-      if (player && typeof player.setVolume === 'function') {
-        player.setVolume(100);
+      try {
+        playerRef.current?.setVolume?.(100);
+      } catch (error) {
+        console.warn('Could not restore lounge music volume:', error);
       }
+      setIsAnnouncing(false);
+      setCurrentAnnouncementText(null);
       isProcessingRef.current = false;
     }
-  }, [onAnnouncementComplete, onAnnouncementStart, playAudio, playerRef, queue]);
+  }, [onAnnouncementComplete, onAnnouncementStart, playerRef, queue]);
 
   useEffect(() => {
     if (queue.length > 0 && !isProcessingRef.current) {
-      void processQueue();
+      processQueue();
     }
-  }, [processQueue, queue]);
+  }, [queue, processQueue]);
 
-  useEffect(() => {
-    const unlockAudio = () => {
-      const retryPlayback = retryPlaybackRef.current;
-      if (retryPlayback) retryPlayback();
-    };
-
-    window.addEventListener('keydown', unlockAudio);
-    window.addEventListener('pointerdown', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
-
-    return () => {
-      window.removeEventListener('keydown', unlockAudio);
-      window.removeEventListener('pointerdown', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-    };
-  }, []);
+  if (!isAnnouncing && !currentAnnouncementText && !announcementError) return null;
 
   return (
-    <>
-      <audio ref={audioRef} preload="auto" />
-      {audioBlocked && (
-        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold text-amber-200">
-          Press any remote key to enable audio
-        </span>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold shadow-lg ${
+      announcementError
+        ? 'bg-red-500/20 border-red-500/60 text-red-200'
+        : 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 animate-pulse'
+    }`}>
+      {!announcementError && <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />}
+      <span>{announcementError || currentAnnouncementText || 'Broadcasting delivery announcement...'}</span>
+      {announcementError && (
+        <button
+          type="button"
+          onClick={() => {
+            setAnnouncementError(null);
+            processQueue();
+          }}
+          className="rounded bg-red-500/20 px-2 py-1 underline"
+        >
+          Retry
+        </button>
       )}
-    </>
+    </div>
   );
 }

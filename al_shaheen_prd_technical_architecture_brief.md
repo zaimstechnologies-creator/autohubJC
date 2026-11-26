@@ -2,7 +2,7 @@
 **Project:** Al Shaheen Precision Automotive OS  
 **Organization:** Al Shaheen Auto Hub (Main Bedian Road, Near Askari 11, DHA Phase 6, Lahore, Pakistan)  
 **Document Version:** 1.0.0 (Production Release Specification)  
-**Target Stack:** Next.js (App Router), TypeScript, Tailwind CSS, Supabase (PostgreSQL + Realtime), Google Gemini API (`@google/genai`), YouTube IFrame API, server-generated MP3 announcements.
+**Target Stack:** Next.js (App Router), TypeScript, Tailwind CSS, Supabase (PostgreSQL + Realtime), Google Gemini API (`@google/genai`), YouTube IFrame API, Web Speech / SpeechSynthesis API.
 
 ---
 
@@ -10,7 +10,7 @@
 Al Shaheen Auto Hub is a premier automotive engineering and diagnostics facility in Lahore, Pakistan. The platform bridges precision mechanical workshop management, proprietary multilingual AI intake (Urdu / Roman-Urdu / English), a broadcast 60" customer lounge TV display with smart audio ducking, and an encrypted privacy-compliant mobile vehicle tracking portal.
 
 The platform's primary objectives:
-1. **Zero Advisor Friction:** Empower non-technical workshop advisors to record colloquial customer complaints, translated by Gemini 2.5 Flash into standardized automotive root-cause repair tickets and billable OEM parts items.
+1. **Zero Advisor Friction:** Empower non-technical workshop advisors to intake colloquial customer complaints via speech-to-text, translated by Gemini 2.5 Flash into standardized automotive root-cause repair tickets and billable OEM parts items.
 2. **Real-time Workshop Orchestration:** Manage a 12-bay matrix (6 Mechanical/Diagnostics Bays + 6 Car Wash/Detailing Bays) with atomic concurrency locking to eliminate race conditions.
 3. **Lounge Experience & Seamless Audio Handoff:** Continuous automotive media playback on a 60" 4K TV lounge screen with automatic FIFO voice announcements and volume ducking when cars become ready.
 4. **Customer Transparency & Privacy:** Instant mobile tracking by registration plate without exposing private owner identity, telephone numbers, or internal profit ledgers.
@@ -21,10 +21,10 @@ The platform's primary objectives:
 
 | Persona | Primary Interface | Key Capabilities |
 | :--- | :--- | :--- |
-| **Service Advisor / Incharge** | `/workshop`, `/workshop/job-card/new` | Create Job Cards, trigger Gemini AI diagnosis, plot vehicle 360° defects, assign bays, print A4 job cards, finalize settlement. |
+| **Service Advisor / Incharge** | `/workshop`, `/workshop/job-card/new` | Create Job Cards, audio intake, trigger Gemini AI diagnosis, plot vehicle 360° defects, assign bays, print A4 job cards, finalize settlement. |
 | **Master Technician** | `/workshop` (12-Bay Matrix) | View assigned work orders, update bay progression stages, report torque/clearance checks. |
 | **Cashier / Accounts Desk** | `/workshop` (Settlement Ledger) | Record advance deposits, process balance payments (Raast / POS / Cash), issue digital gate passes. |
-| **Lounge Customers** | `/tv` (Wall-Mounted 60" Display) | View queue status, watch media stream, and listen for delivery announcements. |
+| **Lounge Customers** | `/tv` (Wall-Mounted 60" Display) | View queue status, watch media stream, listen for audio delivery chimes and announcements. |
 | **Public Customers / Car Owners** | `/track` (Mobile Web) | Input registration plate number, inspect real-time bay stage, view live telemetry metrics & lounge amenities. |
 
 ---
@@ -39,7 +39,7 @@ The platform's primary objectives:
                                         │
 ┌─────────────────────────┐   POST /api/diagnose   ┌──────────────────────────┐
 │  Service Advisor Intake │ ─────────────────────> │   Next.js App Router     │
-│   (Customer concern form)│                      │    (/workshop, /tv,      │
+│   (Voice Speech-to-Text)│                        │    (/workshop, /tv,      │
 └─────────────────────────┘                        │     /track, /api)        │
                                                    └────────────┬─────────────┘
                                                                 │
@@ -52,7 +52,7 @@ The platform's primary objectives:
                     │   /tv (60" Lounge TV)      │                           │  /track (Customer Mobile)  │
                     │ - YouTube IFrame API       │                           │ - Anonymized RPC status    │
                     │ - FIFO Queue + Ducking     │                           │ - Sensor Telemetry         │
-                    │ - Server-generated MP3 TTS  │                           │ - WhatsApp Integration     │
+                    │ - SpeechSynthesis Chimes   │                           │ - WhatsApp Integration     │
                     └────────────────────────────┘                           └────────────────────────────┘
 ```
 
@@ -76,8 +76,9 @@ The platform's primary objectives:
   - Orthographic SVG vehicle blueprint (Engine Hood, Windshield, Panoramic Roof, Doors, Tailgate).
   - Interactive marker placement: **[D] Dent**, **[S] Scratch**, **[C] Chip**, **[R] Rust**.
   - Persistent marker coordinates `(x, y, panel_code, severity)` with Undo/Clear buttons and signed liability waiver.
-- **Gemini 2.5 Flash Engine:**
-  - Processes customer concerns (e.g., *"gari khady main lagti hai tu tik tik awaz aati hai"*).
+- **Bilingual Voice Intake & Gemini 2.5 Flash Engine:**
+  - Browser `webkitSpeechRecognition` configured for `ur-PK` and `en-US`.
+  - Captures colloquial complaints (e.g., *"gari khady main lagti hai tu tik tik awaz aati hai"*).
   - Invokes `POST /api/diagnose` via `@google/genai` (structured JSON schema).
   - Auto-selects matching Repair Departments, writes step-by-step master technician instructions, and auto-populates required spare parts with estimated PKR pricing.
 - **Itemized Billing & Print Engine:**
@@ -86,7 +87,7 @@ The platform's primary objectives:
 
 ### Route 3: `/tv` (60" Waiting Lounge Broadcast TV)
 - **Display Specifications:** 100vw × 100vh full-screen responsive layout, ultra-dark contrast (`#0B1221`), anti-burn-in spacing.
-- **Header:** Brand emblem and live Lahore time (PKT).
+- **Header:** Brand emblem, live Lahore time (PKT), "Unmute & Fullscreen" one-tap audio policy bypass button, Test Chime trigger.
 - **Left 50% — YouTube Channel Player:**
   - YouTube IFrame API loop for Al Shaheen Auto Hub media playlist.
 - **Right 50% — Live 12-Bay Queue:**
@@ -96,8 +97,8 @@ The platform's primary objectives:
   - On vehicle transition to `READY_FOR_DELIVERY`:
     1. Append vehicle to client-side FIFO announcement queue.
     2. Duck YouTube video volume from 100% to 10% via `player.setVolume(10)`.
-    3. Request an MP3 from `GET /api/tts?plate=[plate]`.
-    4. Play the announcement MP3 through one queued HTML audio element.
+    3. Play audio chime (`/chime.mp3` or Web Audio API harmonic chime).
+    4. Announce via `window.speechSynthesis`: *"Attention please. Vehicle number [Spaced Plate], [Make & Model], at [Bay Name], is now ready for delivery."*
     5. Wait 1.2s post-speech; if queue empty, restore YouTube volume to 100% (`player.setVolume(100)`).
 
 ### Route 4: `/track` (Public Customer Mobile Vehicle Tracker)
@@ -282,9 +283,9 @@ Translate colloquial customer complaints (Urdu, Roman Urdu, or English) into mec
 
 ## 6. Non-Functional Requirements & Security
 1. **Concurrency Lock Safety:** Optimistic verification guarantees that two advisors updating Bay allocations simultaneously never overwrite each other.
-2. **Audio Autoplay Compliance:** If the TV blocks autoplay, the next remote-control key press unlocks the pending HTML audio announcement.
+2. **Audio Autoplay Compliance:** The TV route embeds an explicit user-gesture interaction button ("Unmute & Fullscreen") that instantiates the Web Audio context, ensuring browsers don't block audio announcement playback.
 3. **Data Protection (Zero Leaks):** Customer phone numbers and internal accounts margins are strictly withheld from `/track` via the PostgreSQL `SECURITY DEFINER` RPC wrapper.
-4. **Network Resiliency:** generated MP3 announcements are cached on the server for 24 hours.
+4. **Network Resiliency & Offline Fallback:** Web Audio API synthesizes a 3-tone harmonic chime if `/public/chime.mp3` fails to load.
 
 ---
 
@@ -306,7 +307,7 @@ al-shaheen-auto-hub/
 │   └── globals.css
 ├── components/
 │   ├── CarBlueprint.tsx            # SVG Top-Down Defect Plotter
-│   ├── JobCardForm.tsx             # AI diagnosis + Ledger Form
+│   ├── JobCardForm.tsx             # Voice Recognition + Ledger Form
 │   ├── PrintJobCardA4.tsx          # @media print Certified A4 Template
 │   ├── LoungeAudioEngine.tsx       # FIFO Queue & YouTube Volume Ducking
 │   └── BayMatrixCard.tsx           # Bay Card with Mutex State

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   JobCard,
   ItemizedPart,
@@ -16,6 +16,8 @@ import { detectDiagnosisLanguage } from '@/lib/diagnosisLanguage';
 import { createJobCardDraft } from '@/lib/jobCardDraft';
 import { calculateJobCardFinancials } from '@/lib/jobCardFinancials';
 import {
+  Mic,
+  MicOff,
   Sparkles,
   Save,
   Printer,
@@ -74,6 +76,11 @@ function mergeDiagnosisScope(
 export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: JobCardFormProps) {
   const [formData, setFormData] = useState<JobCard>(() => createJobCardDraft(initialData));
 
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const [speechInterim, setSpeechInterim] = useState('');
+  const recognitionRef = useRef<any>(null);
+
   const [aiLoading, setAiLoading] = useState(false);
   const savedAiLanguage =
     initialData?.ai_diagnosis_result?.response_language ||
@@ -115,10 +122,90 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
     formData.advance_deposit,
   ]);
 
+  // Speech Recognition Setup (Urdu + English)
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'ur-PK'; // Primary Urdu / Pakistan, understands English & Roman Urdu
+
+      recognition.onresult = (event: any) => {
+        let finalTrans = '';
+        let interimTrans = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTrans += event.results[i][0].transcript + ' ';
+          } else {
+            interimTrans += event.results[i][0].transcript;
+          }
+        }
+
+        setSpeechInterim(interimTrans);
+        if (finalTrans) {
+          setFormData((prev) => ({
+            ...prev,
+            customer_concern: prev.customer_concern
+              ? `${prev.customer_concern.trim()} ${finalTrans.trim()}`
+              : finalTrans.trim(),
+          }));
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('Speech recognition error:', e.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setSpeechInterim('');
+      };
+
+      recognitionRef.current = recognition;
+    } catch (e) {
+      console.warn('Speech recognition init error:', e);
+      setSpeechSupported(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (_) {}
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        setSpeechInterim('');
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.warn('Failed to start speech recognition:', err);
+      }
+    }
+  };
+
   // Run Gemini AI Diagnosis
   const handleRunAIDiagnosis = async () => {
     if (!formData.customer_concern || formData.customer_concern.trim().length === 0) {
-      toast.error('Please enter the Customer Concern first.');
+      toast.error('Please enter or dictate the Customer Concern first.');
       return;
     }
 
@@ -783,24 +870,47 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         </div>
       </div>
 
-      {/* SECTION 3: AI Scope of Repairs */}
+      {/* SECTION 3: Voice Intake & AI Scope of Repairs */}
       <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-purple-400" />
-            Section 3 Gemini AI Diagnostics
+            Section 3 Voice Intake & Gemini AI Diagnostics
           </h3>
           <span className="text-xs text-slate-400 font-mono">Step 3 of 4</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Customer Concern Box */}
+          {/* Customer Concern Box + Microphone */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-300">
                 Customer Concern / Reported Fault (Urdu / Roman Urdu / English)
               </label>
 
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                    isListening
+                      ? 'bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-900/50'
+                      : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700'
+                  }`}
+                >
+                  {isListening ? (
+                    <>
+                      <MicOff className="w-3.5 h-3.5" />
+                      Listening in Urdu...
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-3.5 h-3.5 text-amber-400" />
+                      Voice Intake (بول کر لکھیں)
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             <textarea
@@ -810,6 +920,12 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               placeholder="Record symptoms: e.g. 'gari khaday mein lagti hai tu tik tik awaz ati hai' or 'AC cooling nahi kar raha'..."
               className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 leading-relaxed font-sans"
             />
+
+            {speechInterim && (
+              <div className="text-[11px] text-amber-300/80 italic font-mono px-2 py-1 bg-amber-950/30 rounded border border-amber-900/40">
+                Transcribing: {speechInterim}...
+              </div>
+            )}
 
             <button
               type="button"
