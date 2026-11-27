@@ -36,7 +36,7 @@ export default function LoungeAudioEngine({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessingRef = useRef(false);
   const retryPlaybackRef = useRef<null | (() => void)>(null);
-  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [announcingPlate, setAnnouncingPlate] = useState<string | null>(null);
 
   const playAudio = useCallback(async (source: string) => {
     const audio = audioRef.current;
@@ -50,14 +50,12 @@ export default function LoungeAudioEngine({
     } catch (error) {
       if (!isAutoplayBlocked(error)) throw error;
 
-      setAudioBlocked(true);
       await new Promise<void>((resolve, reject) => {
         retryPlaybackRef.current = () => {
           retryPlaybackRef.current = null;
           audio.play().then(resolve).catch(reject);
         };
       });
-      setAudioBlocked(false);
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -91,6 +89,7 @@ export default function LoungeAudioEngine({
     }
 
     isProcessingRef.current = true;
+    setAnnouncingPlate(plateNumber);
     if (onAnnouncementStart) onAnnouncementStart(nextCard.id);
 
     try {
@@ -119,6 +118,7 @@ export default function LoungeAudioEngine({
         player.setVolume(100);
       }
       isProcessingRef.current = false;
+      setAnnouncingPlate(null);
     }
   }, [onAnnouncementComplete, onAnnouncementStart, playAudio, playerRef, queue]);
 
@@ -148,9 +148,10 @@ export default function LoungeAudioEngine({
   return (
     <>
       <audio ref={audioRef} preload="auto" />
-      {audioBlocked && (
-        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold text-amber-200">
-          Press any remote key to enable audio
+      {announcingPlate && (
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/35 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200 shadow-lg">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          Live announcement: {announcingPlate}
         </span>
       )}
     </>

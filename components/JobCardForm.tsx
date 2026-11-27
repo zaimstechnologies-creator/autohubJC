@@ -34,6 +34,10 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import AuthSessionButton from '@/components/AuthSessionButton';
 
+function sanitizePlateNumber(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9 -]/g, '').slice(0, 12);
+}
+
 interface JobCardFormProps {
   initialData?: Partial<JobCard> | null;
   onSaveSuccess?: (saved: JobCard) => void;
@@ -482,11 +486,14 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             <input
               type="text"
               required
+              maxLength={12}
+              pattern="[A-Za-z0-9 -]{1,12}"
               value={formData.plate_number}
-              onChange={(e) => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
+              onChange={(e) => setFormData({ ...formData, plate_number: sanitizePlateNumber(e.target.value) })}
               placeholder="e.g. LEA 20 7860 or AQP 007"
               className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold tracking-wider placeholder-slate-600 focus:outline-none focus:border-amber-400 text-sm"
             />
+            <p className="mt-1 text-[10px] text-slate-500">Letters, numbers, spaces, and dashes only (maximum 12 characters).</p>
           </div>
 
           <div>

@@ -91,6 +91,13 @@ CREATE TABLE IF NOT EXISTS job_cards (
   closed_at TIMESTAMPTZ
 );
 
+ALTER TABLE public.job_cards
+  DROP CONSTRAINT IF EXISTS job_cards_plate_number_format_check;
+
+ALTER TABLE public.job_cards
+  ADD CONSTRAINT job_cards_plate_number_format_check
+  CHECK (plate_number ~ '^[A-Za-z0-9 -]{1,12}$') NOT VALID;
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_job_cards_plate ON job_cards (plate_number);
 CREATE INDEX IF NOT EXISTS idx_job_cards_status ON job_cards (status);

@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function isValidPlateNumber(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Z0-9 -]{1,12}$/i.test(value.trim());
+}
+
 function databaseUnavailable() {
   return NextResponse.json(
     { error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.' },
@@ -66,6 +70,12 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (!isValidPlateNumber(body.plate_number)) {
+      return NextResponse.json(
+        { error: 'Plate number must contain only letters, numbers, spaces, or dashes (maximum 12 characters).' },
+        { status: 400 }
+      );
+    }
 
     const now = new Date().toISOString();
     const normalized = normalizeJobCard({
@@ -104,6 +114,12 @@ export async function PUT(req: NextRequest) {
     const identifier = String(body.id || body.job_card_number || '');
     if (!identifier) {
       return NextResponse.json({ error: 'Missing job card identifier.' }, { status: 400 });
+    }
+    if (body.plate_number !== undefined && !isValidPlateNumber(body.plate_number)) {
+      return NextResponse.json(
+        { error: 'Plate number must contain only letters, numbers, spaces, or dashes (maximum 12 characters).' },
+        { status: 400 }
+      );
     }
 
     const now = new Date().toISOString();
