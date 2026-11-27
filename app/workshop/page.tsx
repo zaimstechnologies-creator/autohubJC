@@ -29,10 +29,13 @@ import {
   CreditCard,
   FileText,
   Lock,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useJobCards } from '@/hooks/useJobCards';
+import { useTheme } from '@/components/ThemeProvider';
 
 const BUSINESS_TIME_ZONE = 'Asia/Karachi';
 
@@ -56,6 +59,7 @@ function formatHours(hours: number) {
 
 export default function WorkshopDashboard() {
   const { jobCards, loading, loadJobCards } = useJobCards();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'matrix' | 'cards' | 'closed' | 'archive' | 'settings'>('matrix');
   const [selectedBayFilter, setSelectedBayFilter] = useState<'ALL' | 'WORKSHOP' | 'CAR_WASH'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -208,11 +212,11 @@ export default function WorkshopDashboard() {
   }, [jobCards, activeTab, activeCards, closedTodayCards, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-slate-800/80 bg-slate-950/95 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-3.5 lg:flex-row lg:items-center lg:justify-between">
+      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/95 sm:px-6 sm:py-3.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full min-w-0 items-center gap-2 sm:gap-3 lg:w-auto">
-          <div className="bg-white p-1 rounded-xl shadow-md border border-slate-700/40 flex items-center justify-center">
+          <div className="bg-white p-1 rounded-xl shadow-md border border-slate-200 dark:border-slate-700/40 flex items-center justify-center">
             <img
               src="/logo.png"
               alt="Al Shaheen Auto Hub"
@@ -221,14 +225,14 @@ export default function WorkshopDashboard() {
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h1 className="text-sm font-black uppercase tracking-tight text-white sm:text-base">
+              <h1 className="text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white sm:text-base">
                 Al Shaheen Auto Hub
               </h1>
-              <span className="rounded-full border border-[#ba1825]/40 bg-[#ba1825]/20 px-2 py-0.5 font-mono text-[9px] font-bold text-rose-300 sm:text-[10px]">
+              <span className="rounded-full border border-[#ba1825]/30 bg-[#ba1825]/10 px-2 py-0.5 font-mono text-[9px] font-bold text-[#ba1825] dark:border-[#ba1825]/40 dark:bg-[#ba1825]/20 dark:text-rose-300 sm:text-[10px]">
                 Enterprise OS
               </span>
             </div>
-            <p className="text-[10px] leading-snug text-slate-400 sm:text-[11px]">
+            <p className="text-[10px] leading-snug text-slate-500 dark:text-slate-400 sm:text-[11px]">
               Main Bedian Road, DHA Phase 6, Lahore • Tel: +92 344-1411123
             </p>
           </div>
@@ -239,24 +243,24 @@ export default function WorkshopDashboard() {
           <Link
             href="/tv"
             target="_blank"
-            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-sky-500/30 bg-slate-900 px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-sky-400 shadow transition hover:bg-slate-800 sm:px-3.5 sm:text-xs"
+            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-sky-500/30 bg-white px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-sky-600 shadow-sm transition hover:bg-sky-50 dark:bg-slate-900 dark:text-sky-400 dark:shadow dark:hover:bg-slate-800 sm:px-3.5 sm:text-xs"
           >
-            <Tv className="h-4 w-4 shrink-0 text-sky-400" />
+            <Tv className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
             60" Lounge TV (Live)
           </Link>
           <Link
             href="/track"
             target="_blank"
-            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-slate-900 px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-emerald-400 shadow transition hover:bg-slate-800 sm:px-3.5 sm:text-xs"
+            className="flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-white px-2.5 py-2 text-center text-[11px] font-bold leading-tight text-emerald-600 shadow-sm transition hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-400 dark:shadow dark:hover:bg-slate-800 sm:px-3.5 sm:text-xs"
           >
-            <Smartphone className="h-4 w-4 shrink-0 text-emerald-400" />
+            <Smartphone className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             Customer Tracker
           </Link>
 
           <button
             type="button"
             onClick={() => setSettingsModalOpen(true)}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
             title="AI & Lounge Settings"
             aria-label="AI and lounge settings"
           >
@@ -266,7 +270,7 @@ export default function WorkshopDashboard() {
           <button
             type="button"
             onClick={loadJobCards}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
             title="Refresh Data"
             aria-label="Refresh data"
           >
@@ -289,59 +293,59 @@ export default function WorkshopDashboard() {
       <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 space-y-4 p-3 sm:space-y-6 sm:p-6">
         {/* Executive Operations HUD */}
         <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
-          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow sm:p-3.5">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Active in Workshop
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-2xl font-black font-mono text-white">
+              <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
                 {activeCards.length}
               </span>
-              <span className="text-xs text-amber-400 font-medium">Bays Engaged</span>
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Bays Engaged</span>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-emerald-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
-            <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">
+          <div className="min-w-0 rounded-2xl border border-emerald-500/40 bg-white p-3 shadow-sm dark:bg-slate-900/80 dark:shadow sm:p-3.5">
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
               Ready for Exit
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-2xl font-black font-mono text-emerald-400 animate-pulse">
+              <span className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 animate-pulse">
                 {readyCards.length}
               </span>
-              <span className="text-[10px] text-emerald-300/80 font-mono">Announced</span>
+              <span className="text-[10px] text-emerald-600/80 dark:text-emerald-300/80 font-mono">Announced</span>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow sm:p-3.5">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Settled Today
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-2xl font-black font-mono text-white">
+              <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
                 {closedTodayCards.length}
               </span>
               <span className="text-xs text-slate-500 font-medium">Vehicles</span>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-amber-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5">
-            <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
+          <div className="min-w-0 rounded-2xl border border-amber-500/40 bg-white p-3 shadow-sm dark:bg-slate-900/80 dark:shadow sm:p-3.5">
+            <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
               Total Invoiced (PKR)
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-xl font-black font-mono text-amber-400 truncate">
+              <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-400 truncate">
                 {totalInvoicedRevenue.toLocaleString()}
               </span>
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow sm:p-3.5">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow sm:p-3.5">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Avg Turnaround
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-2xl font-black font-mono text-sky-400">
+              <span className="text-2xl font-black font-mono text-sky-600 dark:text-sky-400">
                 {averageTurnaroundHours === null ? '—' : formatHours(averageTurnaroundHours)}
               </span>
               <span className="text-[10px] text-slate-500">
@@ -351,17 +355,17 @@ export default function WorkshopDashboard() {
           </div>
 
           <div
-            className="min-w-0 rounded-2xl border border-purple-500/40 bg-slate-900/80 p-3 shadow sm:p-3.5"
+            className="min-w-0 rounded-2xl border border-purple-500/40 bg-white p-3 shadow-sm dark:bg-slate-900/80 dark:shadow sm:p-3.5"
             title="Share of job cards with a customer concern that have a saved AI diagnosis"
           >
-            <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
               AI First-Pass
             </span>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-2xl font-black font-mono text-purple-300">
+              <span className="text-2xl font-black font-mono text-purple-600 dark:text-purple-300">
                 {aiFirstPassRate === null ? '—' : `${aiFirstPassRate.toFixed(1)}%`}
               </span>
-              <span className="text-[10px] text-purple-400/80">
+              <span className="text-[10px] text-purple-600/80 dark:text-purple-400/80">
                 {aiFirstPassRate === null ? 'No diagnostics yet' : 'Completed'}
               </span>
             </div>
@@ -369,7 +373,7 @@ export default function WorkshopDashboard() {
         </div>
 
         {/* Tab & Navigation Controls */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
           <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
             <button
               type="button"
@@ -377,7 +381,7 @@ export default function WorkshopDashboard() {
               className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'matrix'
                   ? 'bg-amber-500 text-slate-950 shadow'
-                  : 'bg-slate-950 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <Layers className="h-4 w-4 shrink-0" />
@@ -390,7 +394,7 @@ export default function WorkshopDashboard() {
               className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'cards'
                   ? 'bg-amber-500 text-slate-950 shadow'
-                  : 'bg-slate-950 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:hover:text-white'
               }`}
               aria-label={`Active Job Cards (${activeCards.length})`}
             >
@@ -405,7 +409,7 @@ export default function WorkshopDashboard() {
               className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'closed'
                   ? 'bg-amber-500 text-slate-950 shadow'
-                  : 'bg-slate-950 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:hover:text-white'
               }`}
               aria-label={`Closed & Paid Today (${closedTodayCards.length})`}
             >
@@ -420,7 +424,7 @@ export default function WorkshopDashboard() {
               className={`flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[10px] font-bold leading-tight transition sm:px-3.5 sm:text-xs ${
                 activeTab === 'archive'
                   ? 'bg-amber-500 text-slate-950 shadow'
-                  : 'bg-slate-950 text-slate-400 hover:text-white'
+                  : 'bg-slate-100 text-slate-600 hover:text-slate-900 dark:bg-slate-950 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <Archive className="h-4 w-4 shrink-0" />
@@ -430,15 +434,15 @@ export default function WorkshopDashboard() {
           </div>
 
           {activeTab === 'matrix' && (
-            <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950 p-1 text-[10px] sm:flex sm:w-auto sm:gap-1.5 sm:text-xs">
+            <div className="grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1 text-[10px] dark:border-slate-800 dark:bg-slate-950 sm:flex sm:w-auto sm:gap-1.5 sm:text-xs">
               <button
                 type="button"
                 onClick={() => setSelectedBayFilter('ALL')}
                 aria-label="Show all 12 bays"
                 className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'ALL'
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white dark:shadow-none'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <span className="sm:hidden">All Bays</span>
@@ -450,8 +454,8 @@ export default function WorkshopDashboard() {
                 aria-label="Show 6 workshop bays"
                 className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'WORKSHOP'
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <span className="sm:hidden">Workshop</span>
@@ -463,8 +467,8 @@ export default function WorkshopDashboard() {
                 aria-label="Show 6 wash bays"
                 className={`min-h-9 rounded-lg px-1.5 py-1 font-semibold transition sm:px-2.5 ${
                   selectedBayFilter === 'CAR_WASH'
-                    ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/40'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <span className="sm:hidden">Wash</span>
@@ -475,13 +479,13 @@ export default function WorkshopDashboard() {
 
           {activeTab !== 'matrix' && (
             <div className="relative w-full sm:min-w-[240px] sm:w-auto">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search Plate, Name, RO #..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-800 dark:text-white dark:placeholder-slate-500"
               />
             </div>
           )}
@@ -493,10 +497,10 @@ export default function WorkshopDashboard() {
             {/* Workshop Bays (1–6) */}
             {(selectedBayFilter === 'ALL' || selectedBayFilter === 'WORKSHOP') && (
               <div className="min-w-0 space-y-3">
-                <div className="flex flex-col gap-1 border-b border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1 border-b border-slate-200 dark:border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-start gap-2">
-                    <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-white sm:text-sm">
+                    <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-amber-500 dark:text-amber-400" />
+                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-slate-900 dark:text-white sm:text-sm">
                       Workshop Bays (Diagnostics, Mechanical & Detailing)
                     </h3>
                   </div>
@@ -530,10 +534,10 @@ export default function WorkshopDashboard() {
             {/* Car Wash Bays (1–6) */}
             {(selectedBayFilter === 'ALL' || selectedBayFilter === 'CAR_WASH') && (
               <div className="min-w-0 space-y-3">
-                <div className="flex flex-col gap-1 border-b border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1 border-b border-slate-200 dark:border-slate-800 pb-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-start gap-2">
-                    <Droplets className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" />
-                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-white sm:text-sm">
+                    <Droplets className="mt-0.5 h-5 w-5 shrink-0 text-sky-500 dark:text-sky-400" />
+                    <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wider text-slate-900 dark:text-white sm:text-sm">
                       Car Wash & Detailing Bays (1–6)
                     </h3>
                   </div>
@@ -568,11 +572,11 @@ export default function WorkshopDashboard() {
 
         {/* TAB 2, 3, 4: CARDS / CLOSED / ARCHIVE DATABASE */}
         {activeTab !== 'matrix' && (
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm dark:bg-slate-900/80 dark:border-slate-800 dark:shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold">
+                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800">
                     <th className="py-3 px-4">RO #</th>
                     <th className="py-3 px-4">Plate No</th>
                     <th className="py-3 px-4">Make & Model</th>
@@ -583,31 +587,31 @@ export default function WorkshopDashboard() {
                     <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-900/30">
+                <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800/60 dark:bg-slate-900/30">
                   {filteredRegistry.map((card) => {
                     const isReady = card.status === 'READY_FOR_DELIVERY';
                     const isClosed = card.status === 'CLOSED_PAID';
 
                     return (
-                      <tr key={card.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-3 px-4 font-mono font-bold text-amber-400">
+                      <tr key={card.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-4 font-mono font-bold text-amber-600 dark:text-amber-400">
                           {card.job_card_number}
                         </td>
-                        <td className="py-3 px-4 font-mono font-black text-white">
-                          <span className="px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/30">
+                        <td className="py-3 px-4 font-mono font-black text-slate-900 dark:text-white">
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/30">
                             {card.plate_number}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-200">
+                        <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
                           {card.make_model} {card.variant ? `(${card.variant})` : ''}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-white">{card.customer_name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">
+                          <div className="font-semibold text-slate-900 dark:text-white">{card.customer_name}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                             {card.customer_phone}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-300 font-mono">
+                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-mono">
                           {card.bay_category === 'CAR_WASH' ? 'Wash Bay' : 'Workshop Bay'}{' '}
                           {card.bay_number}
                         </td>
@@ -615,23 +619,23 @@ export default function WorkshopDashboard() {
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isReady
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
+                                ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-400 animate-pulse'
                                 : isClosed
-                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                ? 'bg-blue-500/15 text-blue-700 border border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-400'
+                                : 'bg-amber-500/15 text-amber-700 border border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300'
                             }`}
                           >
                             {card.status.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-amber-400">
+                        <td className="py-3 px-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                           {(card.net_payable || 0).toLocaleString()} PKR
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <Link
                               href={`/workshop/job-card/${card.id}`}
-                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition text-[11px] font-semibold"
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 transition text-[11px] font-semibold"
                             >
                               Edit / Print
                             </Link>
@@ -640,7 +644,7 @@ export default function WorkshopDashboard() {
                               <button
                                 type="button"
                                 onClick={() => handleUpdateStatus(card.id, 'CLOSED_PAID', card.updated_at)}
-                                className="px-2 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white transition text-[11px] font-bold"
+                                className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white transition text-[11px] font-bold"
                                 title="Settle & Mark Paid"
                               >
                                 Settle
@@ -668,25 +672,63 @@ export default function WorkshopDashboard() {
 
       {/* Settings Modal */}
       {settingsModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4 text-amber-400" />
-                Workshop & AI / TV Configuration
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl dark:bg-slate-900 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Settings className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                Workshop &amp; AI / TV Configuration
               </h3>
               <button
                 type="button"
                 onClick={() => setSettingsModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                aria-label="Close settings"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5">
+                  Appearance Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950">
+                  <button
+                    type="button"
+                    onClick={() => setTheme('light')}
+                    aria-pressed={theme === 'light'}
+                    className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      theme === 'light'
+                        ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                    }`}
+                  >
+                    <Sun className="h-4 w-4 text-amber-500" />
+                    Light Mode
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme('dark')}
+                    aria-pressed={theme === 'dark'}
+                    className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      theme === 'dark'
+                        ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                    }`}
+                  >
+                    <Moon className="h-4 w-4 text-sky-400" />
+                    Dark Mode
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 mt-1.5 block">
+                  Saved automatically in this browser for future visits.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   YouTube Playlist ID (60" Lounge TV)
                 </label>
                 <input
@@ -694,14 +736,14 @@ export default function WorkshopDashboard() {
                   value={youtubePlaylistId}
                   onChange={(e) => setYoutubePlaylistId(e.target.value)}
                   placeholder="e.g. PLw-VjHDlEOgs658kAHR_LAaILBXb-s6Q5"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono dark:bg-slate-950 dark:border-slate-700 dark:text-white"
                 />
                 <span className="text-[10px] text-slate-500 mt-1 block">
                   Configured YouTube IFrame Player list for lounge media stream.
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 AI diagnostics use the server-side GEMINI_API_KEY configuration. API keys are never entered or stored in this browser.
               </p>
             </div>

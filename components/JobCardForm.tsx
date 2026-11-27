@@ -289,32 +289,32 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 pb-20">
       {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl backdrop-blur-md sticky top-2 z-20">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white/95 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl backdrop-blur-md sticky top-2 z-20">
         <div className="flex items-center gap-3">
           <Link
             href="/workshop"
-            className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
+            className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700 transition"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400">
                 {formData.job_card_number}
               </span>
               <span
                 className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                   formData.status === 'READY_FOR_DELIVERY'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
+                    ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-400 animate-pulse'
                     : formData.status === 'CLOSED_PAID'
-                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    ? 'bg-blue-500/15 text-blue-700 border border-blue-500/40 dark:bg-blue-500/20 dark:text-blue-400'
+                    : 'bg-amber-500/15 text-amber-700 border border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300'
                 }`}
               >
                 {formData.status.replace(/_/g, ' ')}
               </span>
             </div>
-            <h2 className="text-lg font-bold text-white tracking-tight">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
               {formData.customer_name ? `${formData.customer_name} • ${formData.plate_number || 'New Card'}` : 'Create Job Card & Diagnosis'}
             </h2>
           </div>
@@ -334,9 +334,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 toast.error('Please save the job card before printing.');
               }
             }}
-            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition shadow"
+            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition shadow-sm dark:shadow"
           >
-            <Printer className="w-4 h-4 text-sky-400" />
+            <Printer className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             Print A4 Job Card
           </button>
 
@@ -344,7 +344,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             type="button"
             onClick={() => handleSave('CLOSED_PAID')}
             disabled={saving}
-            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition shadow-lg shadow-emerald-900/30 disabled:opacity-50"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition shadow-lg shadow-emerald-900/20 dark:shadow-emerald-900/30 disabled:opacity-50"
           >
             <CreditCard className="w-4 h-4" />
             💳 Mark Paid & Close
@@ -354,13 +354,13 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             type="button"
             onClick={() => handleSave()}
             disabled={saving}
-            className="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 flex items-center gap-1.5 transition shadow-lg shadow-amber-950/50 disabled:opacity-50"
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 flex items-center gap-1.5 transition shadow-lg shadow-amber-950/20 dark:shadow-amber-950/50 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Job Card'}
           </button>
 
-          <div className="ml-1 border-l border-slate-700/80 pl-2">
+          <div className="ml-1 border-l border-slate-200 dark:border-slate-700/80 pl-2">
             <AuthSessionButton />
           </div>
         </div>
@@ -368,21 +368,21 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
 
       {/* AI Explanation Banner */}
       {aiBanner && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/95 via-slate-900/95 to-purple-950/95 border border-indigo-500/50 shadow-2xl flex items-start gap-3.5 backdrop-blur">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300 shrink-0 mt-0.5">
-            <Sparkles className="w-5 h-5 text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-50 via-white to-purple-50 border border-indigo-200 shadow-lg dark:from-indigo-950/95 dark:via-slate-900/95 dark:to-purple-950/95 dark:border-indigo-500/50 dark:shadow-2xl flex items-start gap-3.5 backdrop-blur">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 border border-indigo-200 text-indigo-600 dark:bg-indigo-600/30 dark:border-indigo-400/40 dark:text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
+            <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
           </div>
           <div className="flex-1 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-800/50 pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 dark:border-indigo-800/50 pb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                <span className="text-xs font-bold text-indigo-800 dark:text-amber-300 uppercase tracking-wider">
                   AI Mechanical Advisor Explanation (Customer-Facing Breakdown)
                 </span>
               </div>
 
               {/* Language Switcher */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center bg-slate-950/80 p-0.5 rounded-lg border border-slate-700 text-xs">
+                <div className="flex items-center bg-slate-100 dark:bg-slate-950/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
                   <button
                     type="button"
                     onClick={() => {
@@ -394,7 +394,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                     className={`px-2.5 py-1 rounded-md font-semibold transition ${
                       aiLanguage === 'roman_urdu'
                         ? 'bg-amber-500 text-slate-950 shadow'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                     }`}
                   >
                     🇵🇰 Roman Urdu (اردو)
@@ -410,7 +410,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                     className={`px-2.5 py-1 rounded-md font-semibold transition ${
                       aiLanguage === 'english'
                         ? 'bg-indigo-600 text-white shadow'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                     }`}
                   >
                     🇬🇧 English
@@ -420,7 +420,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 <button
                   type="button"
                   onClick={() => setAiBanner(null)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs"
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition text-xs"
                   title="Dismiss banner"
                 >
                   ✕
@@ -428,7 +428,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               </div>
             </div>
 
-            <div className="text-xs sm:text-sm text-slate-100 leading-relaxed font-sans whitespace-pre-wrap bg-slate-950/50 p-3 rounded-xl border border-indigo-900/40">
+            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed font-sans whitespace-pre-wrap bg-white/80 dark:bg-slate-950/50 p-3 rounded-xl border border-indigo-200 dark:border-indigo-900/40">
               {formatNumberedPoints(aiBanner)}
             </div>
           </div>
@@ -436,53 +436,53 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       )}
 
       {/* SECTION 1: Customer & Vehicle Profile */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-            <Car className="w-4 h-4 text-amber-400" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <Car className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             Customer & Vehicle Profile
           </h3>
-          <span className="text-xs text-slate-400 font-mono">Step 1 of 4</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Step 1 of 4</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Customer Full Name *</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Customer Full Name *</label>
             <input
               type="text"
               required
               value={formData.customer_name}
               onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
               placeholder="e.g. M. Haider Khan"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Phone Number *</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Phone Number *</label>
             <input
               type="text"
               required
               value={formData.customer_phone}
               onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
               placeholder="03XX-XXXXXXX"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Address / Locality</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Address / Locality</label>
             <input
               type="text"
               value={formData.customer_address || ''}
               onChange={(e) => setFormData({ ...formData, customer_address: e.target.value })}
               placeholder="e.g. Askari 11, DHA Phase 6, Lahore"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Registration Plate No *</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Registration Plate No *</label>
             <input
               type="text"
               required
@@ -491,71 +491,71 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               value={formData.plate_number}
               onChange={(e) => setFormData({ ...formData, plate_number: sanitizePlateNumber(e.target.value) })}
               placeholder="e.g. LEA 20 7860 or AQP 007"
-              className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold tracking-wider placeholder-slate-600 focus:outline-none focus:border-amber-400 text-sm"
+              className="w-full bg-slate-50 border border-amber-500/50 rounded-xl px-3 py-2 text-amber-700 font-mono font-bold tracking-wider placeholder-slate-400 focus:outline-none focus:border-amber-500 text-sm dark:bg-slate-950 dark:text-amber-300 dark:placeholder-slate-600 dark:focus:border-amber-400"
             />
             <p className="mt-1 text-[10px] text-slate-500">Letters, numbers, spaces, and dashes only (maximum 12 characters).</p>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Vehicle Make & Model *</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Vehicle Make & Model *</label>
             <input
               type="text"
               required
               value={formData.make_model}
               onChange={(e) => setFormData({ ...formData, make_model: e.target.value })}
               placeholder="e.g. Toyota Fortuner / Honda Civic"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Variant / Engine</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Variant / Engine</label>
             <input
               type="text"
               value={formData.variant || ''}
               onChange={(e) => setFormData({ ...formData, variant: e.target.value })}
               placeholder="e.g. 2.8 Sigma 4 / 1.5 Turbo"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Odometer Mileage (KM)</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Odometer Mileage (KM)</label>
             <input
               type="number"
               value={formData.mileage_km || ''}
               onChange={(e) => setFormData({ ...formData, mileage_km: Number(e.target.value) })}
               placeholder="e.g. 45000"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Body Color</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Body Color</label>
             <input
               type="text"
               value={formData.body_color || ''}
               onChange={(e) => setFormData({ ...formData, body_color: e.target.value })}
               placeholder="e.g. Pearl White / Metallic Black"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Service Advisor</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Service Advisor</label>
             <input
               type="text"
               value={formData.service_advisor}
               onChange={(e) => setFormData({ ...formData, service_advisor: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600"
             />
           </div>
         </div>
 
         {/* Bay Allocation & Workflow Status Matrix */}
-        <div className="pt-2 border-t border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Bay Category</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Bay Category</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -563,7 +563,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 className={`py-2 px-3 rounded-xl font-semibold border transition ${
                   formData.bay_category === 'WORKSHOP'
                     ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                    : 'bg-slate-950 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800'
                 }`}
               >
                 Workshop Bay (1–6)
@@ -574,7 +574,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 className={`py-2 px-3 rounded-xl font-semibold border transition ${
                   formData.bay_category === 'CAR_WASH'
                     ? 'bg-sky-500 text-slate-950 border-sky-400 shadow'
-                    : 'bg-slate-950 text-slate-300 border-slate-700 hover:bg-slate-800'
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800'
                 }`}
               >
                 Car Wash Bay (1–6)
@@ -583,11 +583,11 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Assigned Bay Number</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Assigned Bay Number</label>
             <select
               value={formData.bay_number}
               onChange={(e) => setFormData({ ...formData, bay_number: Number(e.target.value) })}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold focus:outline-none focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
             >
               {formData.bay_category === 'WORKSHOP'
                 ? WORKSHOP_BAYS.map((b) => (
@@ -604,16 +604,16 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Workflow Stage</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Workflow Stage</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className={`w-full bg-slate-950 border rounded-xl px-3 py-2 font-bold focus:outline-none ${
+              className={`w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 font-bold focus:outline-none ${
                 formData.status === 'READY_FOR_DELIVERY'
-                  ? 'border-emerald-500 text-emerald-400'
+                  ? 'border-emerald-500 text-emerald-700 dark:text-emerald-400'
                   : formData.status === 'CLOSED_PAID'
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-amber-500 text-amber-300'
+                  ? 'border-blue-500 text-blue-700 dark:text-blue-400'
+                  : 'border-amber-500 text-amber-700 dark:text-amber-300'
               }`}
             >
               <option value="INTAKE">INTAKE (Vehicle Received)</option>
@@ -625,14 +625,14 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         </div>
 
         {/* Fuel Level Slider & Handed Over Items */}
-        <div className="pt-2 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-                <Fuel className="w-4 h-4 text-amber-400" />
+              <span className="text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                <Fuel className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 Fuel Level in Tank:
               </span>
-              <span className="font-mono font-bold text-amber-400 text-sm">
+              <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">
                 {formData.fuel_level_percent}%
               </span>
             </div>
@@ -643,7 +643,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               step={5}
               value={formData.fuel_level_percent}
               onChange={(e) => setFormData({ ...formData, fuel_level_percent: Number(e.target.value) })}
-              className="w-full accent-amber-500 h-2 bg-slate-950 rounded-lg cursor-pointer"
+              className="w-full accent-amber-500 h-2 bg-slate-200 dark:bg-slate-950 rounded-lg cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
               <span>EMPTY (0%)</span>
@@ -655,12 +655,12 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           </div>
 
           <div>
-            <span className="block text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="block text-slate-600 dark:text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               Handed-Over Inventory Checklist:
             </span>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <label className="flex items-center gap-2 p-2 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 dark:bg-slate-950 dark:border-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.handed_over_inventory.spare_wheel}
@@ -675,10 +675,10 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   }
                   className="rounded text-amber-500 accent-amber-500 w-4 h-4"
                 />
-                <span className="text-slate-300">Spare Wheel Present</span>
+                <span className="text-slate-700 dark:text-slate-300">Spare Wheel Present</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 dark:bg-slate-950 dark:border-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.handed_over_inventory.tools}
@@ -693,10 +693,10 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   }
                   className="rounded text-amber-500 accent-amber-500 w-4 h-4"
                 />
-                <span className="text-slate-300">Tool Kit / Jack</span>
+                <span className="text-slate-700 dark:text-slate-300">Tool Kit / Jack</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 dark:bg-slate-950 dark:border-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.handed_over_inventory.mats}
@@ -711,10 +711,10 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   }
                   className="rounded text-amber-500 accent-amber-500 w-4 h-4"
                 />
-                <span className="text-slate-300">Floor Mats</span>
+                <span className="text-slate-700 dark:text-slate-300">Floor Mats</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 dark:bg-slate-950 dark:border-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.handed_over_inventory.valuables_cleared}
@@ -729,7 +729,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   }
                   className="rounded text-amber-500 accent-amber-500 w-4 h-4"
                 />
-                <span className="text-slate-300">Valuables Cleared</span>
+                <span className="text-slate-700 dark:text-slate-300">Valuables Cleared</span>
               </label>
             </div>
           </div>
@@ -737,13 +737,13 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       </div>
 
       {/* SECTION 2: Interactive 360° Inspection Blueprint */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-sky-400" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             Section 2 Interactive 360° Vehicle Exterior Inspection
           </h3>
-          <span className="text-xs text-slate-400 font-mono">Step 2 of 4</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Step 2 of 4</span>
         </div>
 
         <CarBlueprint
@@ -754,9 +754,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       </div>
 
       {/* Repair Departments Selection */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             Repair Departments & Work Centers
           </h4>
           <span className="text-xs text-slate-500">Auto-filled by AI or checked manually</span>
@@ -772,14 +772,14 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 onClick={() => handleDepartmentToggle(dept)}
                 className={`p-2.5 rounded-xl text-xs font-medium border text-left transition flex items-center justify-between ${
                   isChecked
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                    ? 'bg-amber-500/15 text-amber-800 border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-300 shadow-sm'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800 dark:hover:border-slate-700'
                 }`}
               >
                 <span>{dept}</span>
                 <span
                   className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isChecked ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-500'
+                    isChecked ? 'bg-amber-400 text-slate-950' : 'bg-slate-200 text-slate-500 dark:bg-slate-800'
                   }`}
                 >
                   {isChecked ? '✓' : ''}
@@ -791,20 +791,20 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       </div>
 
       {/* SECTION 3: AI Scope of Repairs */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             Section 3 Gemini AI Diagnostics
           </h3>
-          <span className="text-xs text-slate-400 font-mono">Step 3 of 4</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Step 3 of 4</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Customer Concern Box */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Customer Concern / Reported Fault (Urdu / Roman Urdu / English)
               </label>
 
@@ -815,14 +815,14 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               value={formData.customer_concern || ''}
               onChange={(e) => setFormData({ ...formData, customer_concern: e.target.value })}
               placeholder="Record symptoms: e.g. 'gari khaday mein lagti hai tu tik tik awaz ati hai' or 'AC cooling nahi kar raha'..."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 leading-relaxed font-sans"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white dark:placeholder-slate-600 leading-relaxed font-sans"
             />
 
             <button
               type="button"
               onClick={handleRunAIDiagnosis}
               disabled={aiLoading}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-600 hover:from-purple-500 hover:to-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-purple-950/50 disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-amber-600 hover:from-purple-500 hover:to-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-purple-950/20 dark:shadow-purple-950/50 disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
               {aiLoading ? 'Analyzing Vehicle Symptoms with Gemini...' : '✨ Run AI Diagnosis & Auto-Fill Job Card'}
@@ -832,7 +832,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           {/* Work To Be Done Box */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Work To Be Done / Scope of Repairs (Master Tech Instructions)
               </label>
               <span className="text-[10px] text-slate-500">
@@ -845,17 +845,17 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
               value={formData.work_to_be_done || ''}
               onChange={(e) => setFormData({ ...formData, work_to_be_done: e.target.value })}
               placeholder="1. Inspect and confirm the reported faults.\n2. Complete the necessary repairs.\n3. Test the repairs and verify the results."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500 font-mono leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500 dark:bg-slate-950 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-600 font-mono leading-relaxed"
             />
           </div>
         </div>
       </div>
 
       {/* SECTION 4: Spare Parts, Materials & Pricing (PKR) */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             Section 4 Spare Parts, Materials & Pricing (PKR)
           </h3>
           <button
@@ -869,10 +869,10 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         </div>
 
         {/* Dynamic Parts Table */}
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold">
+              <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 font-semibold dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800">
                 <th className="py-2.5 px-3 w-10">#</th>
                 <th className="py-2.5 px-3">Description of Parts / Material</th>
                 <th className="py-2.5 px-3 w-32">Classification</th>
@@ -882,9 +882,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 <th className="py-2.5 px-3 w-12 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+            <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800/60 dark:bg-slate-900/40">
               {formData.itemized_parts.map((part, idx) => (
-                <tr key={part.id || idx} className="hover:bg-slate-800/40 transition">
+                <tr key={part.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                   <td className="py-2 px-3 text-slate-500 font-mono">{idx + 1}</td>
                   <td className="py-2 px-3">
                     <input
@@ -892,14 +892,14 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                       value={part.description}
                       onChange={(e) => handleUpdatePart(idx, 'description', e.target.value)}
                       placeholder="e.g. Front Lower Arm Bushing Set"
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-white focus:outline-none focus:border-amber-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
                     />
                   </td>
                   <td className="py-2 px-3">
                     <select
                       value={part.classification || 'OEM Parts'}
                       onChange={(e) => handleUpdatePart(idx, 'classification', e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-slate-300 focus:outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-slate-700 focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-slate-300"
                     >
                       <option value="OEM Parts">OEM Parts</option>
                       <option value="Aftermarket">Aftermarket</option>
@@ -912,7 +912,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                       min={1}
                       value={part.qty}
                       onChange={(e) => handleUpdatePart(idx, 'qty', Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-center focus:outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-slate-900 font-mono text-center focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-white"
                     />
                   </td>
                   <td className="py-2 px-3">
@@ -922,17 +922,17 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                       step={100}
                       value={part.rate}
                       onChange={(e) => handleUpdatePart(idx, 'rate', Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono focus:outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-slate-900 font-mono focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-white"
                     />
                   </td>
-                  <td className="py-2 px-3 text-right font-mono font-bold text-amber-400">
+                  <td className="py-2 px-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                     {(part.amount || 0).toLocaleString()}
                   </td>
                   <td className="py-2 px-3 text-center">
                     <button
                       type="button"
                       onClick={() => handleRemovePart(idx)}
-                      className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition"
+                      className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition"
                       title="Delete part"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -953,22 +953,22 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
         </div>
 
         {/* Ledger & Financial Totals */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-slate-200 dark:border-slate-800">
           <div className="space-y-3 text-xs">
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">Labour Charges (PKR)</label>
+              <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Labour Charges (PKR)</label>
               <input
                 type="number"
                 min={0}
                 step={250}
                 value={formData.labor_charges}
                 onChange={(e) => setFormData({ ...formData, labor_charges: Number(e.target.value) })}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">
+              <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
                 Wheel Alignment / Other Service Charges (PKR)
               </label>
               <input
@@ -979,12 +979,12 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 onChange={(e) =>
                   setFormData({ ...formData, alignment_charges: Number(e.target.value) })
                 }
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">Discount (PKR)</label>
+              <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Discount (PKR)</label>
               <input
                 type="number"
                 min={0}
@@ -993,12 +993,12 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 onChange={(e) =>
                   setFormData({ ...formData, discount_amount: Number(e.target.value) })
                 }
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">Advance Received (PKR)</label>
+              <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Advance Received (PKR)</label>
               <input
                 type="number"
                 min={0}
@@ -1007,50 +1007,50 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 onChange={(e) =>
                   setFormData({ ...formData, advance_deposit: Number(e.target.value) })
                 }
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
               />
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 flex flex-col justify-between">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 space-y-3 flex flex-col justify-between">
+            <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               Settlement Calculation Breakdown (PKR)
             </h4>
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-slate-300">
+              <div className="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>Spare Parts Total:</span>
                 <span className="font-mono font-bold">
                   {(formData.parts_total || 0).toLocaleString()} PKR
                 </span>
               </div>
-              <div className="flex justify-between text-slate-300">
+              <div className="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>Labour Charges:</span>
                 <span className="font-mono font-bold">
                   {(formData.labor_charges || 0).toLocaleString()} PKR
                 </span>
               </div>
-              <div className="flex justify-between text-slate-300">
+              <div className="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>Alignment & Other Charges:</span>
                 <span className="font-mono font-bold">
                   {(formData.alignment_charges || 0).toLocaleString()} PKR
                 </span>
               </div>
               {Number(formData.discount_amount) > 0 && (
-                <div className="flex justify-between text-emerald-400">
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>Discount Applied:</span>
                   <span className="font-mono font-bold">
                     - {(formData.discount_amount || 0).toLocaleString()} PKR
                   </span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-slate-800 pt-2 text-sm font-extrabold text-white">
+              <div className="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-2 text-sm font-extrabold text-slate-900 dark:text-white">
                 <span>Net Payable:</span>
-                <span className="font-mono text-amber-400">
+                <span className="font-mono text-amber-600 dark:text-amber-400">
                   {(formData.net_payable || 0).toLocaleString()} PKR
                 </span>
               </div>
-              <div className="flex justify-between text-xs text-slate-400">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>Advance Deposited:</span>
                 <span className="font-mono">
                   {(formData.advance_deposit || 0).toLocaleString()} PKR
@@ -1059,8 +1059,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             </div>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-300 uppercase">Balance Remaining:</span>
-              <span className="text-lg font-black font-mono text-amber-400">
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase">Balance Remaining:</span>
+              <span className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">
                 {(formData.balance_remaining || 0).toLocaleString()} PKR
               </span>
             </div>
@@ -1069,9 +1069,9 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
       </div>
 
       {/* Quality Check Sign-offs & Handover Notes */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm dark:bg-slate-900/70 dark:border-slate-800 dark:shadow-lg space-y-4">
+        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           Quality Audit Checkmarks (Sign-Off Before Ready / Delivery)
         </h4>
 
@@ -1090,7 +1090,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
             return (
               <label
                 key={key}
-                className="flex items-center gap-2 p-2.5 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700"
+                className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 dark:bg-slate-950 dark:border-slate-800 dark:hover:border-slate-700 cursor-pointer"
               >
                 <input
                   type="checkbox"
@@ -1106,7 +1106,7 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                   }
                   className="rounded text-emerald-500 accent-emerald-500 w-4 h-4"
                 />
-                <span className={isChecked ? 'text-white font-semibold' : 'text-slate-400'}>
+                <span className={isChecked ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-600 dark:text-slate-400'}>
                   {label}
                 </span>
               </label>
@@ -1114,25 +1114,25 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
           })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-800 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Vehicle Received By</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Vehicle Received By</label>
             <input
               type="text"
               value={formData.received_by || ''}
               onChange={(e) => setFormData({ ...formData, received_by: e.target.value })}
               placeholder="Advisor / Reception Staff"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Delivered By & Gate Pass Sign</label>
+            <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Delivered By & Gate Pass Sign</label>
             <input
               type="text"
               value={formData.delivered_by || ''}
               onChange={(e) => setFormData({ ...formData, delivered_by: e.target.value })}
               placeholder="Delivery Officer / Security Gate"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-white"
             />
           </div>
         </div>

@@ -122,7 +122,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0b1428] px-4 py-8 text-slate-900">
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-[#0b1428] px-4 py-8 text-slate-900 transition-colors duration-200">
       <section
         aria-labelledby="login-title"
         className="w-full max-w-[508px] rounded-[24px] bg-white px-7 py-9 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:-translate-y-16 sm:px-[35px] sm:py-11"

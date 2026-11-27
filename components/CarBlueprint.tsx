@@ -88,9 +88,9 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
   return (
     <div className="w-full">
       {!readOnly && (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700/70 bg-slate-900/80 p-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-100 p-3 dark:border-slate-700/70 dark:bg-slate-900/80">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Mark a defect
             </span>
             {(Object.keys(DEFECT_CONFIG) as DefectType[]).map((type) => {
@@ -106,7 +106,7 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
                   className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 ${
                     isSelected
                       ? `${config.bg} border-white/30 text-white shadow-sm`
-                      : 'border-slate-700 bg-slate-950/70 text-slate-300 hover:border-slate-500 hover:bg-slate-800'
+                      : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black/20 text-[10px] font-black">
@@ -128,7 +128,7 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
               type="button"
               onClick={handleUndo}
               disabled={markers.length === 0}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
               title="Undo the most recently added marker"
             >
               <Undo className="h-3.5 w-3.5" />
@@ -138,7 +138,7 @@ export default function CarBlueprint({ markers = [], onChange, readOnly = false 
               type="button"
               onClick={handleClearAll}
               disabled={markers.length === 0}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-900/70 bg-rose-950/40 px-3 text-xs font-semibold text-rose-200 transition hover:bg-rose-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Clear all

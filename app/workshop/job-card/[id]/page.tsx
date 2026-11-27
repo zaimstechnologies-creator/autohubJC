@@ -67,9 +67,9 @@ export default function JobCardDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-400 font-mono text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 font-mono text-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-amber-500 dark:text-amber-400" />
           Loading Job Card {id}...
         </div>
       </div>
@@ -91,9 +91,9 @@ export default function JobCardDetailPage() {
 
   if (!card) {
     return (
-      <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-6 space-y-4">
-        <h2 className="text-xl font-bold text-white">Job Card Not Found</h2>
-        <p className="text-sm text-slate-400">The requested record ({id}) could not be located.</p>
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 flex flex-col items-center justify-center p-6 space-y-4">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Job Card Not Found</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">The requested record ({id}) could not be located.</p>
         <Link
           href="/workshop"
           className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
@@ -105,7 +105,7 @@ export default function JobCardDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100">
       <div className="p-6 print-page-stage">
         {isPrintMode ? (
           <div className="print-page-frame bg-white shadow-2xl mx-auto print:shadow-none">
