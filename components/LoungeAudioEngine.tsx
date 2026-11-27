@@ -12,7 +12,8 @@ interface LoungeAudioEngineProps {
   playerRef: React.MutableRefObject<any>;
 }
 
-const YOUTUBE_ANNOUNCEMENT_VOLUME = 18;
+export const YOUTUBE_DEFAULT_VOLUME = 70;
+const YOUTUBE_ANNOUNCEMENT_VOLUME = 15;
 const ANNOUNCEMENT_BELL_SOURCE = '/chime.mp3';
 
 async function fetchAnnouncementAudio(source: string) {
@@ -115,7 +116,7 @@ export default function LoungeAudioEngine({
     } finally {
       const player = playerRef.current;
       if (player && typeof player.setVolume === 'function') {
-        player.setVolume(100);
+        player.setVolume(YOUTUBE_DEFAULT_VOLUME);
       }
       isProcessingRef.current = false;
       setAnnouncingPlate(null);

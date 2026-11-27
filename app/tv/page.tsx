@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { JobCard, WORKSHOP_BAYS, CAR_WASH_BAYS } from '@/types';
-import LoungeAudioEngine from '@/components/LoungeAudioEngine';
+import LoungeAudioEngine, { YOUTUBE_DEFAULT_VOLUME } from '@/components/LoungeAudioEngine';
 import {
   Radio,
   Activity,
@@ -118,7 +118,9 @@ export default function LoungeTVPage() {
         if (playerRef.current) {
           if (typeof playerRef.current.setLoop === 'function') playerRef.current.setLoop(true);
           if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
-          if (typeof playerRef.current.setVolume === 'function') playerRef.current.setVolume(100);
+          if (typeof playerRef.current.setVolume === 'function') {
+            playerRef.current.setVolume(YOUTUBE_DEFAULT_VOLUME);
+          }
           if (typeof playerRef.current.playVideo === 'function') playerRef.current.playVideo();
         }
       } catch (err) {
@@ -250,7 +252,7 @@ export default function LoungeTVPage() {
                   event.target.setLoop(true);
                   // Best-effort audible autoplay; Android kiosk browsers must allow it.
                   event.target.unMute();
-                  event.target.setVolume(100);
+                  event.target.setVolume(YOUTUBE_DEFAULT_VOLUME);
                   event.target.playVideo();
                 } catch (e) {
                   console.warn('YouTube onReady setup error:', e);
