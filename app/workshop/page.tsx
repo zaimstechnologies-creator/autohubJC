@@ -65,6 +65,8 @@ export default function WorkshopDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [lockedCardIds, setLockedCardIds] = useState<Set<string>>(new Set());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [settlementDialogCard, setSettlementDialogCard] = useState<JobCard | null>(null);
+  const [isSettlementSaving, setIsSettlementSaving] = useState(false);
   const [youtubePlaylistId, setYoutubePlaylistId] = useState('PLfWI-z1AjtsA');
   // Mutex Lock helper
   const acquireLock = (cardId: string) => {
@@ -113,11 +115,13 @@ export default function WorkshopDashboard() {
   };
 
   // Update Status with Concurrency Mutex
-  const handleUpdateStatus = async (
+  const updateJobCardStatus = async (
     cardId: string,
     newStatus: JobCard['status'],
-    lastUpdatedAt: string
-  ) => {
+    lastUpdatedAt: string,
+    printAfterUpdate = false
+  ): Promise<boolean> => {
+    const printWindow = printAfterUpdate ? window.open('about:blank', '_blank') : null;
     acquireLock(cardId);
     try {
       const res = await fetch('/api/jobcards/status', {
@@ -132,15 +136,61 @@ export default function WorkshopDashboard() {
 
       const json = await res.json();
       if (!res.ok) {
+        printWindow?.close();
         toast.error(json.error || 'Failed to update status.');
       } else {
         toast.success('Job card status updated.');
+        if (printAfterUpdate) {
+          if (printWindow && !printWindow.closed) {
+            printWindow.location.href = `/workshop/job-card/${encodeURIComponent(cardId)}?print=1`;
+          } else {
+            toast.error('Job card settled, but the print window was blocked. Open the job card and use Print A4 Job Card.');
+          }
+        }
       }
       await loadJobCards();
+      return res.ok;
     } catch (err: any) {
+      printWindow?.close();
       toast.error(`Status update error: ${err.message}`);
+      return false;
     } finally {
       releaseLock(cardId);
+    }
+  };
+
+  const handleUpdateStatus = async (
+    cardId: string,
+    newStatus: JobCard['status'],
+    lastUpdatedAt: string
+  ) => {
+    if (newStatus === 'CLOSED_PAID') {
+      const card = jobCards.find((jobCard) => jobCard.id === cardId);
+      if (!card) {
+        toast.error('Could not find the job card to settle.');
+        return;
+      }
+      setSettlementDialogCard(card);
+      return;
+    }
+
+    await updateJobCardStatus(cardId, newStatus, lastUpdatedAt);
+  };
+
+  const handleSettlementChoice = async (savePdf: boolean) => {
+    if (!settlementDialogCard || isSettlementSaving) return;
+
+    setIsSettlementSaving(true);
+    try {
+      const updated = await updateJobCardStatus(
+        settlementDialogCard.id,
+        'CLOSED_PAID',
+        settlementDialogCard.updated_at,
+        savePdf
+      );
+      if (updated) setSettlementDialogCard(null);
+    } finally {
+      setIsSettlementSaving(false);
     }
   };
 
@@ -487,6 +537,61 @@ export default function WorkshopDashboard() {
                 placeholder="Search Plate, Name, RO #..."
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-800 dark:text-white dark:placeholder-slate-500"
               />
+            </div>
+          )}
+
+          {settlementDialogCard && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              onClick={() => {
+                if (!isSettlementSaving) setSettlementDialogCard(null);
+              }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="settlement-dialog-title"
+                className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:p-6"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-4 flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <CreditCard className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 id="settlement-dialog-title" className="text-lg font-bold text-slate-900 dark:text-white">
+                      Settle Job Card
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                      {settlementDialogCard.job_card_number} · {settlementDialogCard.customer_name}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mb-5 text-sm text-slate-600 dark:text-slate-300">
+                  Choose whether to open the PDF print dialog after marking this job card as paid.
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleSettlementChoice(true)}
+                    disabled={isSettlementSaving}
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <FileText className="h-4 w-4" />
+                    {isSettlementSaving ? 'Updating...' : 'Save PDF & Close'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleSettlementChoice(false)}
+                    disabled={isSettlementSaving}
+                    className="min-h-11 rounded-xl border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+                  >
+                    Just Update
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
