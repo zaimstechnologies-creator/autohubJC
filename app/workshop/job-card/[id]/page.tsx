@@ -105,7 +105,7 @@ export default function JobCardDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100">
+    <div className="print-page-shell min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100">
       <div className="p-6 print-page-stage">
         {isPrintMode ? (
           <div className="print-page-frame bg-white shadow-2xl mx-auto print:shadow-none">

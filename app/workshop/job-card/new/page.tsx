@@ -81,7 +81,7 @@ function NewJobCardContent() {
 
 export default function NewJobCardPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 p-6 print-page-stage">
+    <div className="print-page-shell min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070b14] dark:text-slate-100 p-6 print-page-stage">
       <Suspense
         fallback={
           <div className="flex items-center justify-center min-h-[50vh] text-slate-500 dark:text-slate-400 font-mono text-sm gap-2">

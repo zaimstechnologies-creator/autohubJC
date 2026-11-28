@@ -137,6 +137,15 @@ body {
     display: none !important;
   }
 
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  .print-page-shell {
+    min-height: 0 !important;
+    background: #ffffff !important;
+  }
+
   .print-page-stage {
     margin: 0 !important;
     padding: 0 !important;
@@ -145,8 +154,8 @@ body {
 
   .print-page-frame {
     display: block !important;
-    width: 210mm !important;
-    max-width: 210mm !important;
+    width: 100% !important;
+    max-width: none !important;
     margin: 0 auto !important;
     padding: 0 !important;
     border-radius: 0 !important;
@@ -156,23 +165,27 @@ body {
   }
 
   .print-only-container {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
     position: relative !important;
-    width: 210mm !important;
-    max-width: 210mm !important;
+    width: 100% !important;
+    max-width: none !important;
     min-height: 297mm !important;
-    height: 297mm !important;
+    height: auto !important;
     margin: 0 !important;
-    padding: 6mm 7mm !important;
+    padding: 6mm 7mm 2mm !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
     overflow: visible !important;
-    break-after: avoid-page !important;
-    break-before: avoid-page !important;
-    break-inside: avoid-page !important;
-    page-break-after: avoid !important;
-    page-break-before: avoid !important;
-    page-break-inside: avoid !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    box-decoration-break: clone !important;
+    -webkit-box-decoration-break: clone !important;
+  }
+
+  .print-only-container > * {
+    flex: 0 0 auto;
   }
 
   .print-only-container,
@@ -181,11 +194,26 @@ body {
     -webkit-print-color-adjust: exact !important;
   }
 
+  .print-keep-together {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-only-container > footer {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
   table {
     page-break-inside: auto;
   }
 
+  thead {
+    display: table-header-group;
+  }
+
   tr {
+    break-inside: avoid-page;
     page-break-inside: avoid;
     page-break-after: auto;
   }

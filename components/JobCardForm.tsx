@@ -920,7 +920,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                       type="number"
                       min={0}
                       step={100}
-                      value={part.rate}
+                      value={part.rate || ''}
+                      placeholder="0"
                       onChange={(e) => handleUpdatePart(idx, 'rate', Number(e.target.value))}
                       className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-slate-900 font-mono focus:outline-none dark:bg-slate-950 dark:border-slate-700 dark:text-white"
                     />
@@ -961,7 +962,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 type="number"
                 min={0}
                 step={250}
-                value={formData.labor_charges}
+                value={formData.labor_charges || ''}
+                placeholder="0"
                 onChange={(e) => setFormData({ ...formData, labor_charges: Number(e.target.value) })}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 dark:bg-slate-950 dark:border-slate-700 dark:text-white"
               />
@@ -975,7 +977,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 type="number"
                 min={0}
                 step={250}
-                value={formData.alignment_charges}
+                value={formData.alignment_charges || ''}
+                placeholder="0"
                 onChange={(e) =>
                   setFormData({ ...formData, alignment_charges: Number(e.target.value) })
                 }
@@ -989,7 +992,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 type="number"
                 min={0}
                 step={250}
-                value={formData.discount_amount}
+                value={formData.discount_amount || ''}
+                placeholder="0"
                 onChange={(e) =>
                   setFormData({ ...formData, discount_amount: Number(e.target.value) })
                 }
@@ -1003,7 +1007,8 @@ export default function JobCardForm({ initialData, onSaveSuccess, onPrint }: Job
                 type="number"
                 min={0}
                 step={500}
-                value={formData.advance_deposit}
+                value={formData.advance_deposit || ''}
+                placeholder="0"
                 onChange={(e) =>
                   setFormData({ ...formData, advance_deposit: Number(e.target.value) })
                 }
